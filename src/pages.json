@@ -1,16 +1,99 @@
 {
-	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+	"pages": [
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "uni-app"
+				"navigationBarTitleText": "个人财务"
+			}
+		},
+		{
+			"path": "pages/assets/assets",
+			"style": {
+				"navigationBarTitleText": "资产管理"
+			}
+		},
+		{
+			"path": "pages/funds/funds",
+			"style": {
+				"navigationBarTitleText": "基金收益"
+			}
+		},
+		{
+			"path": "pages/income/income",
+			"style": {
+				"navigationBarTitleText": "收入管理"
+			}
+		},
+		{
+			"path": "pages/statistics/statistics",
+			"style": {
+				"navigationBarTitleText": "统计分析"
+			}
+		},
+		{
+			"path": "pages/add-asset/add-asset",
+			"style": {
+				"navigationBarTitleText": "添加资产"
+			}
+		},
+		{
+			"path": "pages/add-fund/add-fund",
+			"style": {
+				"navigationBarTitleText": "添加基金"
+			}
+		},
+		{
+			"path": "pages/add-income/add-income",
+			"style": {
+				"navigationBarTitleText": "添加收入"
 			}
 		}
 	],
+	"tabBar": {
+		"color": "#7A7E83",
+		"selectedColor": "#007AFF",
+		"borderStyle": "black",
+		"backgroundColor": "#ffffff",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"iconPath": "static/tabbar/home.svg",
+				"selectedIconPath": "static/tabbar/home.svg",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/assets/assets",
+				"iconPath": "static/tabbar/assets.svg",
+				"selectedIconPath": "static/tabbar/assets.svg",
+				"text": "资产"
+			},
+			{
+				"pagePath": "pages/funds/funds",
+				"iconPath": "static/tabbar/funds.svg",
+				"selectedIconPath": "static/tabbar/funds.svg",
+				"text": "基金"
+			},
+			{
+				"pagePath": "pages/income/income",
+				"iconPath": "static/tabbar/income.svg",
+				"selectedIconPath": "static/tabbar/income.svg",
+				"text": "收入"
+			},
+			{
+				"pagePath": "pages/statistics/statistics",
+				"iconPath": "static/tabbar/statistics.svg",
+				"selectedIconPath": "static/tabbar/statistics.svg",
+				"text": "统计"
+			}
+		]
+	},
 	"globalStyle": {
-		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
-		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8"
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "个人财务",
+		"navigationBarBackgroundColor": "#007AFF",
+		"backgroundColor": "#F8F8F8",
+		"app-plus": {
+			"background": "#efeff4"
+		}
 	}
 }
