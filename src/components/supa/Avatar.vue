@@ -1,6 +1,6 @@
 <script setup>
 import { ref, toRefs, watchEffect } from 'vue'
-import { supabase } from '../supabase'
+import { supabase } from '../../supabase.js'
 
 const prop = defineProps(['path', 'size'])
 const { path, size } = toRefs(prop)

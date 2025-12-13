@@ -1,5 +1,5 @@
 <script setup>
-import { supabase } from '../supabase'
+import { supabase } from '../../supabase.js'
 import { onMounted, ref, toRefs } from 'vue'
 // Import the new component
 import Avatar from './Avatar.vue'
