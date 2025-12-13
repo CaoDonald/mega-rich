@@ -5,7 +5,7 @@ body {
   --custom-bg-color: rgba(58, 80, 129, 0.34);
   --custom-panel-color: #222;
   --custom-box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.8);
-  --custom-color: #fff;
+  --custom-color: #020202;
   --custom-color-brand: #24b47e;
   --custom-color-secondary: #666;
   --custom-border: 1px solid #333;
@@ -19,7 +19,7 @@ body {
 }
 
 * {
-  color: var(--custom-color);
+  /* color: var(--custom-color); */
   font-family: var(--custom-font-family);
   box-sizing: border-box;
 }
