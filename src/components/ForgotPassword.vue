@@ -48,12 +48,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, inject } from 'vue'
 import { supabase } from '../supabase'
 import { NForm, NFormItem, NInput, NButton, useMessage } from 'naive-ui'
 
-const router = useRouter()
+// 使用 App.vue 提供的页面切换方法
+const navigateTo = inject('navigateTo')
 const message = useMessage()
 const formRef = ref(null)
 const loading = ref(false)
@@ -85,7 +85,7 @@ const handleSendResetLink = async () => {
     }
 
     message.success('重置链接已发送，请检查邮箱')
-    router.push('/login')
+    navigateTo('login')
   } catch (error) {
     if (error.name === 'ValidateError') {
       // 表单验证错误，已由组件处理
@@ -98,7 +98,7 @@ const handleSendResetLink = async () => {
 }
 
 const navigateToLogin = () => {
-  router.push('/login')
+  navigateTo('login')
 }
 </script>
 

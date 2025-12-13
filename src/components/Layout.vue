@@ -5,13 +5,25 @@
         <div class="logo">
           <h1>Mega Rich</h1>
         </div>
+
         <div class="user-info">
-          <n-avatar
+          <!-- 已登录 -->
+          <n-dropdown
             v-if="user"
-            :size="40"
-            :src="user.avatar_url"
-            :fallback="user.email.charAt(0).toUpperCase()"
-          />
+            trigger="click"
+            placement="bottom-end"
+            :options="dropdownOptions"
+            @select="handleDropdownSelect"
+          >
+              <n-avatar
+                :size="40"
+                :src="user.avatar_url"
+                fallback-src=""
+                class="avatar"
+              />
+          </n-dropdown>
+
+          <!-- 未登录 -->
           <n-button
             v-else
             type="primary"
@@ -24,7 +36,7 @@
     </n-layout-header>
 
     <n-layout-content>
-      <slot></slot>
+      <slot />
     </n-layout-content>
 
     <n-layout-footer bordered>
@@ -32,37 +44,97 @@
         <p>© 2025 Mega Rich. All rights reserved.</p>
       </div>
     </n-layout-footer>
+
+    <!-- 用户设置 -->
+    <UserSettingsModal
+      v-model:show="showSettingsModal"
+      :user="user"
+      @user-updated="handleUserUpdated"
+    />
   </n-layout>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, inject } from 'vue'
 import { supabase } from '../supabase'
-import { NLayout, NLayoutHeader, NLayoutContent, NLayoutFooter, NAvatar, NButton } from 'naive-ui'
+import {
+  NLayout,
+  NLayoutHeader,
+  NLayoutContent,
+  NLayoutFooter,
+  NAvatar,
+  NButton,
+  NDropdown
+} from 'naive-ui'
 
-const router = useRouter()
+const navigateTo = inject('navigateTo')
+
 const user = ref(null)
+const showSettingsModal = ref(false)
+
+/** 下拉菜单选项（Naive UI 正确用法） */
+const dropdownOptions = [
+  {
+    label: '设置',
+    key: 'settings'
+  },
+  {
+    label: '退出',
+    key: 'logout'
+  }
+]
+
+const handleDropdownSelect = (key) => {
+  if (key === 'settings') {
+    showSettingsModal.value = true
+  } else if (key === 'logout') {
+    handleLogout()
+  }
+}
 
 onMounted(async () => {
-  // 检查用户登录状态
-  const { data } = await supabase.auth.getSession()
+  const {data,error} = await supabase.auth.getSession()
+  console.log('data',data)
   if (data.session) {
-    user.value = data.session.user
+    await loadUser(data.session.user)
   }
 
-  // 监听认证状态变化
-  supabase.auth.onAuthStateChange((_event, session) => {
-    if (session) {
-      user.value = session.user
+  supabase.auth.onAuthStateChange(async (_event, session) => {
+    console.log('onAuthStateChange',_event,session)
+    if (session?.user) {
+      await loadUser(session.user)
     } else {
       user.value = null
     }
   })
 })
 
+async function loadUser(authUser) {
+  const userRes = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', authUser.id)
+    .single()
+  console.log('userRes',userRes)
+  const { data: profile } = userRes
+  user.value = profile
+    ? { ...authUser, ...profile }
+    : authUser
+  console.log('user',user)
+}
+
 const handleLoginClick = () => {
-  router.push('/login')
+  navigateTo('login')
+}
+
+const handleLogout = async () => {
+  await supabase.auth.signOut()
+  user.value = null
+  navigateTo('home')
+}
+
+const handleUserUpdated = (updatedUser) => {
+  user.value = updatedUser
 }
 </script>
 
@@ -87,16 +159,14 @@ const handleLoginClick = () => {
   gap: 10px;
 }
 
+.avatar {
+  cursor: pointer;
+}
+
 .footer-content {
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 20px;
-  height: 100%;
-}
-
-.footer-content p {
-  margin: 0;
-  color: #666;
 }
 </style>

@@ -2,49 +2,51 @@
   <div class="login-container">
     <div class="login-form-wrapper">
       <h2>登录</h2>
-
       <n-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        layout="vertical"
-        class="login-form"
+          ref="formRef"
+          :model="formData"
+          :rules="formRules"
+          layout="vertical"
+          class="login-form"
       >
         <n-form-item label="邮箱" path="email">
           <n-input
-            v-model:value="formData.email"
-            type="email"
-            placeholder="请输入邮箱"
-            :disabled="loading"
-           
+              v-model:value="formData.email"
+              type="email"
+              placeholder="请输入邮箱"
+              :disabled="loading"
+
           />
         </n-form-item>
 
         <n-form-item label="密码" path="password">
           <n-input
-            v-model:value="formData.password"
-            :type="showPassword ? 'text' : 'password'"
-            :disabled="loading"
-            placeholder="请输入密码"
-            size="large"
+              v-model:value="formData.password"
+              :type="showPassword ? 'text' : 'password'"
+              :disabled="loading"
+              placeholder="请输入密码"
+              size="large"
           >
             <template #suffix>
               <n-button
-                text
-                type="primary"
-                :disabled="loading"
-                @click="showPassword = !showPassword"
-                size="small"
+                  text
+                  type="primary"
+                  :disabled="loading"
+                  @click="showPassword = !showPassword"
+                  size="small"
               >
                 <template #icon>
                   <n-icon>
                     <template #default>
-                      <svg v-if="showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg v-if="showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                         <circle cx="12" cy="12" r="3"></circle>
                       </svg>
-                      <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                      <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
                         <line x1="1" y1="1" x2="23" y2="23"></line>
                       </svg>
                     </template>
@@ -57,11 +59,11 @@
 
         <n-form-item>
           <n-button
-            type="primary"
-            block
-           
-            :loading="loading"
-            @click="handleLogin"
+              type="primary"
+              block
+
+              :loading="loading"
+              @click="handleLogin"
           >
             登录
           </n-button>
@@ -70,18 +72,18 @@
 
       <div class="form-links">
         <n-button
-          text
-          type="primary"
-          :disabled="loading"
-          @click="navigateToForgotPassword"
+            text
+            type="primary"
+            :disabled="loading"
+            @click="navigateToForgotPassword"
         >
           忘记密码
         </n-button>
         <n-button
-          text
-          type="primary"
-          :disabled="loading"
-          @click="navigateToRegister"
+            text
+            type="primary"
+            :disabled="loading"
+            @click="navigateToRegister"
         >
           注册
         </n-button>
@@ -91,12 +93,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { supabase } from '../supabase'
-import { NForm, NFormItem, NInput, NButton, NIcon, useMessage } from 'naive-ui'
+import {ref, reactive, inject} from 'vue'
+import {supabase} from '../supabase'
+import {NForm, NFormItem, NInput, NButton, NIcon, useMessage} from 'naive-ui'
 
-const router = useRouter()
+
+// 使用 App.vue 提供的页面切换方法
+const navigateTo = inject('navigateTo')
 const message = useMessage()
 const formRef = ref(null)
 const loading = ref(false)
@@ -109,12 +112,12 @@ const formData = reactive({
 
 const formRules = {
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+    {required: true, message: '请输入邮箱', trigger: 'blur'},
+    {type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur'}
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6个字符', trigger: 'blur' }
+    {required: true, message: '请输入密码', trigger: 'blur'},
+    {min: 6, message: '密码长度不能少于6个字符', trigger: 'blur'}
   ]
 }
 
@@ -125,7 +128,7 @@ const handleLogin = async () => {
     await formRef.value.validate()
     loading.value = true
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const {error} = await supabase.auth.signInWithPassword({
       email: formData.email,
       password: formData.password
     })
@@ -135,7 +138,7 @@ const handleLogin = async () => {
     }
 
     message.success('登录成功')
-    router.push('/')
+    navigateTo('home')
   } catch (error) {
     if (error.name === 'ValidateError') {
       // 表单验证错误，已由组件处理
@@ -148,11 +151,11 @@ const handleLogin = async () => {
 }
 
 const navigateToForgotPassword = () => {
-  router.push('/forgot-password')
+  navigateTo('forgot-password')
 }
 
 const navigateToRegister = () => {
-  router.push('/register')
+  navigateTo('register')
 }
 </script>
 

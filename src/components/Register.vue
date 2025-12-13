@@ -93,12 +93,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, computed, inject } from 'vue'
 import { supabase } from '../supabase'
 import { NForm, NFormItem, NInput, NButton, NIcon, useMessage } from 'naive-ui'
 
-const router = useRouter()
+// 使用 App.vue 提供的页面切换方法
+const navigateTo = inject('navigateTo')
 const message = useMessage()
 const formRef = ref(null)
 const loading = ref(false)
@@ -140,17 +140,24 @@ const handleRegister = async () => {
     await formRef.value.validate()
     loading.value = true
 
-    const { error } = await supabase.auth.signUp({
+    // 执行注册操作
+    const res = await supabase.auth.signUp({
       email: formData.email,
-      password: formData.password
+      password: formData.password,
+      options: {
+        emailRedirectTo: window.location.origin + '/login'
+      }
     })
+    console.log('res',res);
+    
+    const { data, error } = res
 
     if (error) {
       throw error
     }
 
     message.success('注册成功！请检查邮箱确认注册')
-    router.push('/login')
+    navigateTo('login')
   } catch (error) {
     if (error.name === 'ValidateError') {
       // 表单验证错误，已由组件处理
@@ -163,7 +170,7 @@ const handleRegister = async () => {
 }
 
 const navigateToLogin = () => {
-  router.push('/login')
+  navigateTo('login')
 }
 </script>
 
