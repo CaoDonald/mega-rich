@@ -6,6 +6,29 @@
           <h1>Mega Rich</h1>
         </div>
 
+        <div class="nav-menu">
+          <n-button
+            :type="currentPage.value === 'home' ? 'primary' : 'default'"
+            @click="navigateTo('home')"
+          >
+            首页
+          </n-button>
+          <n-button
+            :type="currentPage.value === 'balance' ? 'primary' : 'default'"
+            @click="navigateTo('balance')"
+            v-if="user"
+          >
+            结余管理
+          </n-button>
+          <n-button
+            :type="currentPage.value === 'salary' ? 'primary' : 'default'"
+            @click="navigateTo('salary')"
+            v-if="user"
+          >
+            月薪管理
+          </n-button>
+        </div>
+
         <div class="user-info">
           <!-- 已登录 -->
           <n-dropdown
@@ -45,29 +68,22 @@
       </div>
     </n-layout-footer>
 
-    <!-- 用户设置 -->
-    <UserSettingsModal
+    <!-- 用户设置（待实现） -->
+    <!-- <UserSettingsModal
       v-model:show="showSettingsModal"
       :user="user"
       @user-updated="handleUserUpdated"
-    />
+    /> -->
   </n-layout>
 </template>
 
 <script setup>
 import { ref, onMounted, inject } from 'vue'
 import { supabase } from '../supabase'
-import {
-  NLayout,
-  NLayoutHeader,
-  NLayoutContent,
-  NLayoutFooter,
-  NAvatar,
-  NButton,
-  NDropdown
-} from 'naive-ui'
+
 
 const navigateTo = inject('navigateTo')
+const currentPage = inject('currentPage')
 
 const user = ref(null)
 const showSettingsModal = ref(false)
@@ -153,6 +169,11 @@ const handleUserUpdated = (updatedUser) => {
   color: #333;
 }
 
+.nav-menu {
+  display: flex;
+  gap: 10px;
+}
+
 .user-info {
   display: flex;
   align-items: center;
@@ -168,5 +189,18 @@ const handleUserUpdated = (updatedUser) => {
   justify-content: center;
   align-items: center;
   padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .nav-menu {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 }
 </style>

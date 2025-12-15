@@ -95,7 +95,6 @@
 <script setup>
 import {ref, reactive, inject} from 'vue'
 import {supabase} from '../supabase'
-import {NForm, NFormItem, NInput, NButton, NIcon, useMessage} from 'naive-ui'
 
 
 // 使用 App.vue 提供的页面切换方法

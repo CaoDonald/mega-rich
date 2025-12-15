@@ -5,6 +5,8 @@ import Home from './components/Home.vue'
 import Login from './components/Login.vue'
 import Register from './components/Register.vue'
 import ForgotPassword from './components/ForgotPassword.vue'
+import Balance from './components/Balance.vue'
+import Salary from './components/Salary.vue'
 import { NMessageProvider } from 'naive-ui'
 
 // 页面切换状态管理
@@ -21,16 +23,18 @@ provide('currentPage', currentPage)
 </script>
 
 <template>
-  <n-message-provider>
-    <Layout>
-      <!-- 根据当前页面状态显示不同组件 -->
-      <Home v-if="currentPage === 'home'" />
-      <Login v-else-if="currentPage === 'login'" />
-      <Register v-else-if="currentPage === 'register'" />
-      <ForgotPassword v-else-if="currentPage === 'forgot-password'" />
-    </Layout>
-  </n-message-provider>
-</template>
+    <n-message-provider>
+      <Layout>
+        <!-- 根据当前页面状态显示不同组件 -->
+        <Home v-if="currentPage === 'home'" />
+        <Login v-else-if="currentPage === 'login'" />
+        <Register v-else-if="currentPage === 'register'" />
+        <ForgotPassword v-else-if="currentPage === 'forgot-password'" />
+        <Balance v-else-if="currentPage === 'balance'" />
+        <Salary v-else-if="currentPage === 'salary'" />
+      </Layout>
+    </n-message-provider>
+  </template>
 
 <style>
 * {
