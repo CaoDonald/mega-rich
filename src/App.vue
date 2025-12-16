@@ -23,6 +23,7 @@ provide('currentPage', currentPage)
 </script>
 
 <template>
+  <n-config-provider>
     <n-message-provider>
       <Layout>
         <!-- 根据当前页面状态显示不同组件 -->
@@ -34,6 +35,7 @@ provide('currentPage', currentPage)
         <Salary v-else-if="currentPage === 'salary'" />
       </Layout>
     </n-message-provider>
+  </n-config-provider>
   </template>
 
 <style>

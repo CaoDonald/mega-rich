@@ -32,7 +32,7 @@
         <div class="user-info">
           <!-- 已登录 -->
           <n-dropdown
-            v-if="user"
+            v-if="session"
             trigger="click"
             placement="bottom-end"
             :options="dropdownOptions"
@@ -40,7 +40,7 @@
           >
               <n-avatar
                 :size="40"
-                :src="user.avatar_url"
+                src="https://www.naiveui.com/assets/naivelogo-BdDVTUmz.svg"
                 fallback-src=""
                 class="avatar"
               />
@@ -79,13 +79,13 @@
 
 <script setup>
 import { ref, onMounted, inject } from 'vue'
-import { supabase } from '../supabase'
-
+import {supabase} from "../supabase.js";
 
 const navigateTo = inject('navigateTo')
 const currentPage = inject('currentPage')
 
 const user = ref(null)
+const session = ref(null)
 const showSettingsModal = ref(false)
 
 /** 下拉菜单选项（Naive UI 正确用法） */
@@ -112,6 +112,7 @@ onMounted(async () => {
   const {data,error} = await supabase.auth.getSession()
   console.log('data',data)
   if (data.session) {
+    session.value = data.session
     await loadUser(data.session.user)
   }
 

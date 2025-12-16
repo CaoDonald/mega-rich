@@ -38,7 +38,7 @@
 </template>
 
 <script setup>
-import { NButton, NIcon } from 'naive-ui'
+import { NButton } from 'naive-ui'
 import { CashOutline, BarChartOutline, ShieldCheckmarkOutline } from '@vicons/ionicons5'
 
 const exploreFeatures = () => {

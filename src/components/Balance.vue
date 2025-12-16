@@ -183,7 +183,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { supabase } from '../supabase'
-import { useMessage, NIcon } from 'naive-ui'
+import { useMessage } from 'naive-ui'
 import {
   AddOutline,
   RefreshOutline,
@@ -374,7 +374,7 @@ const loadData = async () => {
       .order('record_date', { ascending: false })
     items.value = itemsData || []
     
-    message.success('数据加载成功')
+    //message.success('数据加载成功')
   } catch (error) {
     console.error('加载数据失败:', error)
     message.error('数据加载失败')
