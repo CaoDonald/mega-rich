@@ -2,12 +2,18 @@
   <div class="form-container">
     <n-form label-placement="top">
       <n-form-item label="一级分类">
-        <n-select
-          v-model:value="selectedCategory"
-          placeholder="选择一级分类"
-          :options="categoryOptions"
-          @update:value="handleCategoryChange"
-        />
+        <div class="category-select-container">
+          <n-select
+            v-model:value="selectedCategory"
+            placeholder="选择一级分类"
+            :options="categoryOptions"
+            @update:value="handleCategoryChange"
+            style="width: 100%"
+          />
+          <n-button size="small" type="primary" @click="$emit('manage-categories')">
+            管理分类
+          </n-button>
+        </div>
       </n-form-item>
       
       <n-form-item label="二级分类">
@@ -78,7 +84,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['submit', 'cancel'])
+const emit = defineEmits(['submit', 'cancel', 'manage-categories'])
 
 const formData = ref({
   subcategory_id: props.item?.subcategory_id || null,
@@ -136,12 +142,93 @@ const handleCancel = () => {
 <style scoped>
 .form-container {
   max-width: 500px;
+  margin: 0 auto;
+}
+
+:deep(.n-form-item) {
+  margin-bottom: 20px;
+}
+
+:deep(.n-form-item-label) {
+  font-weight: 600;
+  color: var(--custom-color);
+  font-size: 0.95rem;
+}
+
+:deep(.n-select),
+:deep(.n-input-number),
+:deep(.n-date-picker),
+:deep(.n-input) {
+  transition: all 0.3s ease;
+  border-radius: var(--custom-border-radius);
+  border: var(--custom-border);
+}
+
+:deep(.n-select:hover),
+:deep(.n-input-number:hover),
+:deep(.n-date-picker:hover),
+:deep(.n-input:hover) {
+  border-color: var(--custom-color-brand);
+  box-shadow: 0 0 0 2px rgba(36, 180, 126, 0.1);
+}
+
+:deep(.n-select:focus),
+:deep(.n-input-number:focus),
+:deep(.n-date-picker:focus),
+:deep(.n-input:focus) {
+  border-color: var(--custom-color-brand);
+  box-shadow: 0 0 0 2px rgba(36, 180, 126, 0.2);
+}
+
+:deep(.n-select-dropdown),
+:deep(.n-date-picker-dropdown) {
+  border-radius: var(--custom-border-radius);
+  box-shadow: var(--custom-box-shadow);
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 15px;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.form-actions :deep(.n-button) {
+  transition: all 0.3s ease;
+  border-radius: var(--custom-border-radius);
+  font-weight: 500;
+  padding: 8px 16px;
+}
+
+.form-actions :deep(.n-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.form-actions :deep(.n-button:active) {
+  transform: translateY(0);
+}
+
+.form-actions :deep(.n-button--primary) {
+  background-color: var(--custom-color-brand);
+  border-color: var(--custom-color-brand);
+}
+
+.form-actions :deep(.n-button--primary:hover) {
+  background-color: var(--custom-color-brand-hover);
+  border-color: var(--custom-color-brand-hover);
+}
+
+.category-select-container {
+  display: flex;
   gap: 10px;
-  margin-top: 20px;
+  align-items: flex-start;
+}
+
+.category-select-container :deep(.n-button) {
+  margin-top: 2px;
+  white-space: nowrap;
 }
 </style>

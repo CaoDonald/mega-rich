@@ -3,6 +3,8 @@ import {create} from 'naive-ui' // 新增 NMessageProvider（useMessage 依赖�
 import App from './App.vue'
 // 导入需要全局注册的组件
 import {
+    NTabPane,
+    NTabs,
     NResult,
     NSpin,
     NLayout,
@@ -21,6 +23,8 @@ import {
 // 1. 创建 Naive UI 插件，并配置全局注册的组件
 const naive = create({
     components: [
+        NTabPane,
+    NTabs,
         NResult,
         NSpin,
         NMessageProvider,

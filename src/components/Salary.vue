@@ -436,103 +436,288 @@ onMounted(() => {
 .salary-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 30px 20px;
+  min-height: calc(100vh - 120px);
+}
+
+.salary-container h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 0 0 30px 0;
+  color: var(--custom-color);
+  text-align: center;
 }
 
 .action-buttons {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 15px;
+  margin-bottom: 30px;
+  justify-content: flex-end;
+}
+
+.action-buttons :deep(.n-button) {
+  transition: all 0.3s ease;
+  border-radius: var(--custom-border-radius);
+  font-weight: 500;
+}
+
+.action-buttons :deep(.n-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.action-buttons :deep(.n-button:active) {
+  transform: translateY(0);
+}
+
+.action-buttons :deep(.n-button--primary) {
+  background-color: var(--custom-color-brand);
+  border-color: var(--custom-color-brand);
+}
+
+.action-buttons :deep(.n-button--primary:hover) {
+  background-color: var(--custom-color-brand-hover);
+  border-color: var(--custom-color-brand-hover);
+}
+
+.filter-section :deep(.n-button) {
+  transition: all 0.3s ease;
+  border-radius: var(--custom-border-radius);
+  font-weight: 500;
+}
+
+.filter-section :deep(.n-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.filter-section :deep(.n-button:active) {
+  transform: translateY(0);
 }
 
 .filter-section {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 15px;
+  margin-bottom: 30px;
   flex-wrap: wrap;
+  align-items: center;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: var(--custom-border-radius);
+  border: var(--custom-border);
 }
 
 .filter-select {
-  min-width: 150px;
+  min-width: 180px;
+  flex: 1;
+  max-width: 250px;
 }
 
 .records-list {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+}
+
+.records-list :deep(.n-card) {
+  border-radius: var(--custom-border-radius);
+  box-shadow: var(--custom-box-shadow);
+  border: var(--custom-border);
+  overflow: hidden;
+}
+
+.records-list :deep(.n-data-table) {
+  font-size: 0.95rem;
+}
+
+.records-list :deep(.n-data-table-thead) {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.records-list :deep(.n-data-table-thead-th) {
+  font-weight: 600;
+  color: var(--custom-color);
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--custom-color-secondary);
+}
+
+.records-list :deep(.n-data-table-tbody-td) {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.records-list :deep(.n-data-table-tbody-tr:hover) {
+  background-color: rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+.records-list :deep(.n-data-table-td) {
+  color: var(--custom-color);
+}
+
+.records-list :deep(.n-pagination) {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
 }
 
 .statistics-section {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+}
+
+.statistics-section :deep(.n-card) {
+  border-radius: var(--custom-border-radius);
+  box-shadow: var(--custom-box-shadow);
+  border: var(--custom-border);
+  padding: 25px;
+}
+
+.statistics-section h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0 0 25px 0;
+  color: var(--custom-color);
+  text-align: center;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 25px;
 }
 
 .stat-item {
   text-align: center;
+  padding: 25px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: var(--custom-border-radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-item :deep(.n-statistic-label) {
+  color: var(--custom-color-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.stat-item :deep(.n-statistic-value) {
+  color: var(--custom-color-brand);
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.stat-item :deep(.n-statistic-suffix) {
+  color: var(--custom-color);
+  font-size: 1.2rem;
+  font-weight: 500;
 }
 
 .actions-cell {
   display: flex;
-  gap: 5px;
+  gap: 8px;
+  justify-content: center;
 }
 
 .form-container {
   max-width: 500px;
+  margin: 0 auto;
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 15px;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .record-detail {
   max-width: 500px;
+  margin: 0 auto;
 }
 
 .detail-row {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
 }
 
 .detail-label {
   display: inline-block;
   width: 120px;
   font-weight: bold;
+  color: var(--custom-color-secondary);
 }
 
 .detail-value {
   display: inline-block;
   vertical-align: top;
+  color: var(--custom-color);
 }
 
 .record-info {
-  color: #666;
-  margin: 5px 0;
+  color: var(--custom-color-secondary);
+  margin: 8px 0;
+  font-size: 0.9rem;
+}
+
+.delete-confirm-content {
+  padding: 20px 0;
 }
 
 @media (max-width: 768px) {
   .salary-container {
-    padding: 10px;
+    padding: 20px 15px;
+  }
+  
+  .salary-container h2 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
   }
   
   .action-buttons {
     flex-direction: column;
+    gap: 10px;
   }
   
   .filter-section {
     flex-direction: column;
+    gap: 10px;
+    padding: 15px;
   }
   
   .filter-select {
-    min-width: 100%;
+    width: 100%;
+    max-width: 100%;
   }
   
   .stats-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .statistics-section :deep(.n-card) {
+    padding: 15px;
+  }
+  
+  .actions-cell {
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+  }
+  
+  .detail-label {
+    display: block;
+    width: 100%;
+    margin-bottom: 5px;
   }
 }
 </style>
