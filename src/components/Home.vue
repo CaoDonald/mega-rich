@@ -32,6 +32,20 @@
           <h4>安全保障</h4>
           <p>银行级别的安全措施保护您的数据</p>
         </div>
+        <div class="feature-card" @click="navigateTo('salary')" style="cursor: pointer;">
+          <n-icon :size="48">
+            <WalletOutline />
+          </n-icon>
+          <h4>月薪管理</h4>
+          <p>轻松管理您的月薪和年终奖记录</p>
+        </div>
+        <div class="feature-card" @click="navigateTo('balance')" style="cursor: pointer;">
+          <n-icon :size="48">
+            <TrendingUpOutline />
+          </n-icon>
+          <h4>结余管理</h4>
+          <p>实时追踪和分析您的收支结余情况</p>
+        </div>
       </div>
     </div>
   </div>
@@ -39,7 +53,10 @@
 
 <script setup>
 import { NButton } from 'naive-ui'
-import { CashOutline, BarChartOutline, ShieldCheckmarkOutline } from '@vicons/ionicons5'
+import { CashOutline, BarChartOutline, ShieldCheckmarkOutline, WalletOutline, TrendingUpOutline } from '@vicons/ionicons5'
+import { inject } from 'vue'
+
+const navigateTo = inject('navigateTo')
 
 const exploreFeatures = () => {
   // 这里可以添加探索功能的逻辑

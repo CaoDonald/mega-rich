@@ -2,31 +2,8 @@
   <n-layout>
     <n-layout-header bordered>
       <div class="header-content">
-        <div class="logo">
+        <div class="logo" @click="navigateTo('home')" style="cursor: pointer;">
           <h1>Mega Rich</h1>
-        </div>
-
-        <div class="nav-menu">
-          <n-button
-            :type="currentPage.value === 'home' ? 'primary' : 'default'"
-            @click="navigateTo('home')"
-          >
-            首页
-          </n-button>
-          <n-button
-            :type="currentPage.value === 'balance' ? 'primary' : 'default'"
-            @click="navigateTo('balance')"
-            v-if="user"
-          >
-            结余管理
-          </n-button>
-          <n-button
-            :type="currentPage.value === 'salary' ? 'primary' : 'default'"
-            @click="navigateTo('salary')"
-            v-if="user"
-          >
-            月薪管理
-          </n-button>
         </div>
 
         <div class="user-info">
@@ -40,7 +17,7 @@
           >
               <n-avatar
                 :size="40"
-                src="https://www.naiveui.com/assets/naivelogo-BdDVTUmz.svg"
+                :src="avatarSrc || 'https://www.naiveui.com/assets/naivelogo-BdDVTUmz.svg'"
                 fallback-src=""
                 class="avatar"
               />
@@ -78,15 +55,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, inject } from 'vue'
+import { ref,onMounted,inject, watch } from 'vue'
 import {supabase} from "../supabase.js";
 
 const navigateTo = inject('navigateTo')
 const currentPage = inject('currentPage')
+const user = inject('user')
+const session = inject('session')
+const updateUser = inject('updateUser')
 
-const user = ref(null)
-const session = ref(null)
 const showSettingsModal = ref(false)
+const avatarSrc = ref('')
 
 /** 下拉菜单选项（Naive UI 正确用法） */
 const dropdownOptions = [
@@ -100,9 +79,38 @@ const dropdownOptions = [
   }
 ]
 
+// 加载头像方法
+const loadAvatar = async () => {
+  if (user.value?.avatar_url) {
+    try {
+      // 从URL中提取文件路径（去掉存储桶名称）
+      const path = user.value.avatar_url.split('/avatars/')[1]
+      if (path) {
+        const { data, error } = await supabase.storage.from('avatars').download(path)
+        if (error) throw error
+        avatarSrc.value = URL.createObjectURL(data)
+      }
+    } catch (error) {
+      console.error('加载头像失败:', error)
+      avatarSrc.value = ''
+    }
+  } else {
+    avatarSrc.value = ''
+  }
+}
+
+// 监听用户信息变化，重新加载头像
+watch(user, (newUser) => {
+  if (newUser) {
+    loadAvatar()
+  } else {
+    avatarSrc.value = ''
+  }
+}, { immediate: true, deep: true })
+
 const handleDropdownSelect = (key) => {
   if (key === 'settings') {
-    showSettingsModal.value = true
+    navigateTo('user-settings')
   } else if (key === 'logout') {
     handleLogout()
   }
@@ -116,8 +124,9 @@ onMounted(async () => {
     await loadUser(data.session.user)
   }
 
-  supabase.auth.onAuthStateChange(async (_event, session) => {
-    console.log('onAuthStateChange',_event,session)
+supabase.auth.onAuthStateChange(async (event, session) => {
+    console.log('onAuthStateChange', event, session)
+    
     if (session?.user) {
       await loadUser(session.user)
     } else {
@@ -147,6 +156,8 @@ const handleLoginClick = () => {
 const handleLogout = async () => {
   await supabase.auth.signOut()
   user.value = null
+  session.value = null
+  avatarSrc.value = ''
   navigateTo('home')
 }
 
@@ -183,6 +194,7 @@ const handleUserUpdated = (updatedUser) => {
 
 .avatar {
   cursor: pointer;
+  border-radius: 8px
 }
 
 .footer-content {

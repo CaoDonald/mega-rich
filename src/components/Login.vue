@@ -93,9 +93,9 @@
 </template>
 
 <script setup>
-import {ref, reactive, inject} from 'vue'
+import {ref, reactive, inject, onMounted} from 'vue'
 import {supabase} from '../supabase'
-
+import { useMessage } from 'naive-ui'
 
 // 使用 App.vue 提供的页面切换方法
 const navigateTo = inject('navigateTo')
@@ -156,6 +156,14 @@ const navigateToForgotPassword = () => {
 const navigateToRegister = () => {
   navigateTo('register')
 }
+
+// 页面加载时检查是否有密码重置会话
+onMounted(async () => {
+  const { data, error } = await supabase.auth.getSession()
+  if (data.session && data.session.provider_token) {
+    navigateTo('password-reset')
+  }
+})
 </script>
 
 <style scoped>

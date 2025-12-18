@@ -50,6 +50,7 @@
 <script setup>
 import { ref, reactive, inject } from 'vue'
 import { supabase } from '../supabase'
+import { useMessage } from 'naive-ui'
 
 
 // 使用 App.vue 提供的页面切换方法
@@ -77,7 +78,7 @@ const handleSendResetLink = async () => {
     loading.value = true
 
     const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-      redirectTo: window.location.origin + '/login'
+      redirectTo: window.location.origin + '/password-reset'
     })
 
     if (error) {

@@ -15,6 +15,7 @@
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users(id) PRIMARY KEY on delete cascade,
   username VARCHAR(50) not null unique,
+  phone varchar(11),
     avatar_url text,              -- 头像公网访问 URL
   avatar_path text,             -- Storage 内部路径（强烈推荐）
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
