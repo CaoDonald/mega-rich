@@ -126,12 +126,6 @@ onMounted(async () => {
 
 supabase.auth.onAuthStateChange(async (event, session) => {
     console.log('onAuthStateChange', event, session)
-    
-    if (session?.user) {
-      await loadUser(session.user)
-    } else {
-      user.value = null
-    }
   })
 })
 

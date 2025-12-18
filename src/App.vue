@@ -86,7 +86,6 @@ onMounted(async () => {
         <Balance v-else-if="currentPage === 'balance'" />
         <Salary v-else-if="currentPage === 'salary'" />
         <UserSettings v-else-if="currentPage === 'user-settings'" />
-        <EmailVerification v-else-if="currentPage === 'email-verification'" />
       </Layout>
     </n-message-provider>
   </n-config-provider>

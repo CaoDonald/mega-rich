@@ -210,26 +210,26 @@ const validateConfirmPassword = (rule, value) => {
 
 // 密码强度验证
 const validatePasswordStrength = (rule, value) => {
-  // 密码长度至少8位
-  if (value.length < 8) {
-    return new Error('密码长度不能少于8个字符')
-  }
-  // 包含至少一个大写字母
-  if (!/[A-Z]/.test(value)) {
-    return new Error('密码必须包含至少一个大写字母')
-  }
-  // 包含至少一个小写字母
-  if (!/[a-z]/.test(value)) {
-    return new Error('密码必须包含至少一个小写字母')
-  }
-  // 包含至少一个数字
-  if (!/[0-9]/.test(value)) {
-    return new Error('密码必须包含至少一个数字')
-  }
-  // 包含至少一个特殊符号
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
-    return new Error('密码必须包含至少一个特殊符号')
-  }
+  // // 密码长度至少8位
+  // if (value.length < 8) {
+  //   return new Error('密码长度不能少于8个字符')
+  // }
+  // // 包含至少一个大写字母
+  // if (!/[A-Z]/.test(value)) {
+  //   return new Error('密码必须包含至少一个大写字母')
+  // }
+  // // 包含至少一个小写字母
+  // if (!/[a-z]/.test(value)) {
+  //   return new Error('密码必须包含至少一个小写字母')
+  // }
+  // // 包含至少一个数字
+  // if (!/[0-9]/.test(value)) {
+  //   return new Error('密码必须包含至少一个数字')
+  // }
+  // // 包含至少一个特殊符号
+  // if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
+  //   return new Error('密码必须包含至少一个特殊符号')
+  // }
   return true
 }
 
