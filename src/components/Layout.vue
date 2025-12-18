@@ -17,7 +17,7 @@
           >
               <n-avatar
                 :size="40"
-                :src="avatarSrc || 'https://www.naiveui.com/assets/naivelogo-BdDVTUmz.svg'"
+                :src="avatarSrc || '/mega-rich-logo.svg'"
                 fallback-src=""
                 class="avatar"
               />
