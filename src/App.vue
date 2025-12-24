@@ -11,6 +11,17 @@ import Salary from './components/Salary.vue'
 import UserSettings from './components/UserSettings.vue'
 import { NMessageProvider } from 'naive-ui'
 import { supabase } from './supabase'
+import { NConfigProvider } from 'naive-ui'
+
+  /**
+   * js 文件下使用这个做类型提示
+   * @type import('naive-ui').GlobalThemeOverrides
+   */
+  const themeOverrides = {
+    Button: {
+      round: true
+    }
+  }
 
 // 页面切换状态管理
 const currentPage = ref('home')
@@ -74,7 +85,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <n-config-provider>
+  <n-config-provider :theme-overrides="themeOverrides">
     <n-message-provider>
       <Layout>
         <!-- 根据当前页面状态显示不同组件 -->

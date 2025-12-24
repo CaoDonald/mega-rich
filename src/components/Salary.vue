@@ -56,11 +56,6 @@
       </n-button>
     </div>
 
-    <!-- 调试信息：确认数据是否加载 -->
-    <div style="margin-bottom:10px; color: #666;">
-      调试：原始数据量={{ records.length }} | 筛选后={{ filteredRecords.length }}
-    </div>
-
     <!-- 数据列表 -->
     <div class="records-list">
       <n-card>
@@ -145,7 +140,7 @@
       <div class="delete-confirm-content">
         <p>确定要删除这条记录吗？</p>
         <p class="record-info">金额：{{ deletingRecord?.amount }}元</p>
-        <p class="record-info">类型：{{ getRecordTypeLabel(deletingRecord?.type) }}</p>
+        <p class="record-info">类型：{{ deletingRecord?.type }}</p>
         <p class="record-info">日期：{{ deletingRecord?.record_date }}</p>
       </div>
     </n-modal>
@@ -179,7 +174,6 @@
 
           <div class="upload-buttons-wrapper">
             <n-button
-                round
                 type="primary"
                 size="small"
                 :loading="importing"
@@ -189,7 +183,6 @@
             </n-button>
 
             <n-button
-                round
                 type="info"
                 size="small"
                 @click="downloadTemplate"
@@ -241,52 +234,8 @@ import {
   CloudUploadOutline
 } from '@vicons/ionicons5'
 
-// 占位组件
-const AddEditRecordForm = {
-  props: ['record'],
-  emits: ['submit', 'cancel'],
-  template: `
-    <div>
-      <n-form label-width="80px">
-        <n-form-item label="金额">
-          <n-input v-model:value="form.amount" type="number" placeholder="请输入金额"/>
-        </n-form-item>
-        <n-form-item label="类型">
-          <n-select v-model:value="form.type"
-                    :options="[{label:'月薪',value:'salary'},{label:'年终奖',value:'bonus'}]"/>
-        </n-form-item>
-        <n-form-item label="日期">
-          <n-date-picker v-model:value="form.record_date"/>
-        </n-form-item>
-        <n-form-item label="描述">
-          <n-input v-model:value="form.description" type="textarea"/>
-        </n-form-item>
-        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
-          <n-button @click="$emit('cancel')">取消</n-button>
-          <n-button type="primary" @click="$emit('submit', form)">提交</n-button>
-        </div>
-      </n-form>
-    </div>
-  `,
-  setup(props, {emit}) {
-    const form = ref(props.record || {amount: '', type: 'salary', record_date: '', description: ''})
-    return {form}
-  }
-}
-
-const RecordDetail = {
-  props: ['item'],
-  emits: ['close'],
-  template: `
-    <div>
-      <div v-for="(v,k) in item" :key="k" style="margin:10px 0;">
-        <span style="font-weight:bold;margin-right:10px;">{{ k }}:</span>
-        <span>{{ v }}</span>
-      </div>
-      <n-button style="margin-top:20px;" @click="$emit('close')">关闭</n-button>
-    </div>
-  `
-}
+import AddEditRecordForm from './AddEditRecordForm.vue'
+import RecordDetail from './RecordDetail.vue'
 
 // 基础状态
 const message = useMessage()
@@ -357,10 +306,7 @@ const columns = [
   {
     title: '记录类型',
     key: 'type',
-    width: 120,
-    render(row) {
-      return row.type === 'salary' ? '月薪' : '年终奖'
-    }
+    width: 120
   },
   {
     title: '金额',
