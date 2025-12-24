@@ -200,7 +200,6 @@ const handleUserUpdated = (updatedUser) => {
 
 @media (max-width: 768px) {
   .header-content {
-    flex-direction: column;
     gap: 10px;
     padding: 10px;
   }
