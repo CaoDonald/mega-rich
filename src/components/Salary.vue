@@ -94,6 +94,7 @@
         :destroy-on-close="true"
     >
       <AddEditRecordForm
+          :existing-records="records.value"
           @submit="handleAddRecord"
           @cancel="showAddModal = false"
       />
@@ -109,6 +110,7 @@
       <AddEditRecordForm
           v-if="editingRecord"
           :record="editingRecord"
+          :existing-records="records.value"
           @submit="handleUpdateRecord"
           @cancel="showEditModal = false"
       />
@@ -158,7 +160,7 @@
           <ul>
             <li><strong>amount</strong>: 金额（数字）</li>
             <li><strong>type</strong>: 类型（salary/月薪 或 bonus/年终奖）</li>
-            <li><strong>record_date</strong>: 记录日期（YYYY-MM-DD）</li>
+            <li><strong>record_date</strong>: 工资月份（YYYY-MM-DD）</li>
             <li><strong>description</strong>: 描述（可选）</li>
           </ul>
         </div>
@@ -231,7 +233,11 @@ import {
   EyeOutline,
   CreateOutline,
   TrashOutline,
-  CloudUploadOutline
+  CloudUploadOutline,
+  CashOutline,
+  GiftOutline,
+  CaretUpOutline,
+  CaretDownOutline
 } from '@vicons/ionicons5'
 
 import AddEditRecordForm from './AddEditRecordForm.vue'
@@ -284,7 +290,75 @@ const filteredRecords = computed(() => {
       })
     }
   }
-  return result.sort((a, b) => new Date(b.record_date) - new Date(a.record_date))
+  
+  // 按日期排序（从旧到新）
+  result = result.sort((a, b) => new Date(a.record_date) - new Date(b.record_date))
+  
+  // 计算增长、同比和环比
+  const calculatedResult = result.map(record => {
+    const recordDate = new Date(record.record_date)
+    const year = recordDate.getFullYear()
+    const month = recordDate.getMonth()
+    
+    let growth = 0
+    let yoy = 0
+    let mom = 0
+    
+    if (record.type === 'salary') {
+      // 月薪计算逻辑：月度比较
+      // 查找上个月同类型记录
+      const lastMonthRecord = result.find(r => {
+        const rDate = new Date(r.record_date)
+        return r.type === record.type && 
+               rDate.getFullYear() === (month === 0 ? year - 1 : year) && 
+               rDate.getMonth() === (month === 0 ? 11 : month - 1)
+      })
+      
+      // 查找去年同期同类型记录
+      const lastYearRecord = result.find(r => {
+        const rDate = new Date(r.record_date)
+        return r.type === record.type && 
+               rDate.getFullYear() === year - 1 && 
+               rDate.getMonth() === month
+      })
+      
+      // 计算增长（当前金额 - 上个月金额）
+      growth = lastMonthRecord ? record.amount - lastMonthRecord.amount : 0
+      
+      // 计算环比（增长 / 上个月金额 * 100%）
+      mom = lastMonthRecord ? (growth / lastMonthRecord.amount * 100).toFixed(2) : 0
+      
+      // 计算同比（(当前金额 - 去年同期金额) / 去年同期金额 * 100%）
+      yoy = lastYearRecord ? ((record.amount - lastYearRecord.amount) / lastYearRecord.amount * 100).toFixed(2) : 0
+    } else if (record.type === 'bonus') {
+      // 年终奖计算逻辑：年度比较
+      // 查找去年同类型记录（不考虑月份，只考虑年份）
+      const lastYearRecord = result.find(r => {
+        const rDate = new Date(r.record_date)
+        return r.type === record.type && 
+               rDate.getFullYear() === year - 1
+      })
+      
+      // 计算增长（当前金额 - 去年金额）
+      growth = lastYearRecord ? record.amount - lastYearRecord.amount : 0
+      
+      // 计算同比（(当前金额 - 去年金额) / 去年金额 * 100%）
+      yoy = lastYearRecord ? ((record.amount - lastYearRecord.amount) / lastYearRecord.amount * 100).toFixed(2) : 0
+      
+      // 年终奖环比为0（因为是年度发放，没有月度环比）
+      mom = 0
+    }
+    
+    return {
+      ...record,
+      growth,
+      yoy,
+      mom
+    }
+  })
+  
+  // 最终按日期从新到旧排序
+  return calculatedResult.sort((a, b) => new Date(b.record_date) - new Date(a.record_date))
 })
 
 const totalAmount = computed(() => {
@@ -306,7 +380,17 @@ const columns = [
   {
     title: '记录类型',
     key: 'type',
-    width: 120
+    width: 80,
+    render(row) {
+      // 使用图标表示类型
+      const icon = row.type === 'salary' ? 
+        h(NIcon, { size: 20, color: '#2080f0' }, { default: () => h(CashOutline) }) : 
+        h(NIcon, { size: 20, color: '#f53f3f' }, { default: () => h(GiftOutline) })
+      return h('div', { 
+        class: 'type-icon-container',
+        title: row.type === 'salary' ? '月薪' : '年终奖'
+      }, [icon])
+    }
   },
   {
     title: '金额',
@@ -317,7 +401,7 @@ const columns = [
     }
   },
   {
-    title: '记录日期',
+    title: '工资月份',
     key: 'record_date',
     width: 150,
     render(row) {
@@ -325,19 +409,54 @@ const columns = [
     }
   },
   {
-    title: '同比增长率',
-    key: 'yoy_growth_rate',
+    title: '增长',
+    key: 'growth',
     width: 120,
     render(row) {
-      return `${row.yoy_growth_rate || 0}%`
+      const value = parseFloat(row.growth || 0)
+      const isNegative = value < 0
+      const displayValue = Math.abs(value).toFixed(2)
+      const icon = isNegative ? 
+        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
+        h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
+      return h('div', { 
+        class: 'growth-item',
+        style: { color: isNegative ? '#18a058' : '#f53f3f' }
+      }, [icon, ` ${displayValue}元`])
     }
   },
   {
-    title: '环比增长率',
-    key: 'mom_growth_rate',
+    title: '同比',
+    key: 'yoy',
     width: 120,
     render(row) {
-      return `${row.mom_growth_rate || 0}%`
+      const value = parseFloat(row.yoy || 0)
+      const isNegative = value < 0
+      const displayValue = Math.abs(value).toFixed(2)
+      const icon = isNegative ? 
+        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
+        h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
+      return h('div', { 
+        class: 'growth-item',
+        style: { color: isNegative ? '#18a058' : '#f53f3f' }
+      }, [icon, ` ${displayValue}%`])
+    }
+  },
+  {
+    title: '环比',
+    key: 'mom',
+    width: 120,
+    render(row) {
+      const value = parseFloat(row.mom || 0)
+      const isNegative = value < 0
+      const displayValue = Math.abs(value).toFixed(2)
+      const icon = isNegative ? 
+        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
+        h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
+      return h('div', { 
+        class: 'growth-item',
+        style: { color: isNegative ? '#18a058' : '#f53f3f' }
+      }, [icon, ` ${displayValue}%`])
     }
   },
   {
@@ -393,21 +512,9 @@ const columns = [
 const loadData = async () => {
   loading.value = true
   try {
-    const {data: {user}} = await supabase.auth.getUser()
-    if (!user) {
-      message.error('请先登录')
-      loading.value = false
-      // 模拟数据（测试用：如果登录失败，手动加测试数据）
-      records.value = [
-        {id: 1, amount: 15000, type: 'salary', record_date: '2025-12-01', description: '测试月薪'},
-        {id: 2, amount: 60000, type: 'bonus', record_date: '2025-12-20', description: '测试年终奖'}
-      ]
-      return
-    }
     const {data: recordsData, error} = await supabase
         .from('salary_records')
         .select('*')
-        .eq('user_id', user.id)
         .order('record_date', {ascending: false})
     if (error) throw error
     records.value = recordsData || []
@@ -428,6 +535,23 @@ const loadData = async () => {
 const refreshData = () => loadData()
 const applyFilters = () => console.log('筛选:', selectedType.value, selectedDate.value)
 
+// 辅助函数：确保日期格式正确
+const formatDateForDB = (date) => {
+  if (date instanceof Date) {
+    return date.toISOString().split('T')[0]
+  } else if (typeof date === 'number') {
+    // 处理timestamp格式
+    return new Date(date).toISOString().split('T')[0]
+  } else if (typeof date === 'string') {
+    // 处理字符串格式，确保是YYYY-MM-DD格式
+    const dateObj = new Date(date)
+    if (!isNaN(dateObj.getTime())) {
+      return dateObj.toISOString().split('T')[0]
+    }
+  }
+  return new Date().toISOString().split('T')[0] // 默认返回今天日期
+}
+
 const handleAddRecord = async (formData) => {
   try {
     const {data: {user}} = await supabase.auth.getUser()
@@ -435,9 +559,15 @@ const handleAddRecord = async (formData) => {
       message.error('请先登录')
       return
     }
+    // 确保日期格式正确
+    const formattedData = {
+      ...formData,
+      user_id: user.id,
+      record_date: formatDateForDB(formData.record_date)
+    }
     const {data, error} = await supabase
         .from('salary_records')
-        .insert({...formData, user_id: user.id})
+        .insert(formattedData)
         .select()
         .single()
     if (error) throw error
@@ -462,7 +592,7 @@ const handleUpdateRecord = async (formData) => {
         .update({
           amount: formData.amount,
           type: formData.type,
-          record_date: formData.record_date,
+          record_date: formatDateForDB(formData.record_date),
           description: formData.description
         })
         .eq('id', formData.id)
@@ -645,7 +775,11 @@ const batchInsertRecords = async (records) => {
   const {data: {user}, error: authError} = await supabase.auth.getUser()
   if (authError || !user) throw new Error('请先登录')
 
-  const recordsWithUserId = records.map(r => ({...r, user_id: user.id}))
+  const recordsWithUserId = records.map(r => ({
+    ...r, 
+    user_id: user.id,
+    record_date: formatDateForDB(r.record_date) // 确保日期格式正确
+  }))
   const batchSize = 50
   for (let i = 0; i < recordsWithUserId.length; i += batchSize) {
     const batch = recordsWithUserId.slice(i, i + batchSize)

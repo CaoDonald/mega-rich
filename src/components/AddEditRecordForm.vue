@@ -41,6 +41,20 @@ const typeOptions = [
 ]
 
 const handleSubmit = () => {
-  emit('submit', { ...form.value })
+  const submitData = { ...form.value }
+  // 处理日期格式：将Date对象或timestamp转换为ISO格式字符串，适配Supabase的Date类型
+  if (submitData.record_date instanceof Date) {
+    submitData.record_date = submitData.record_date.toISOString().split('T')[0]
+  } else if (typeof submitData.record_date === 'number') {
+    // 处理timestamp格式
+    submitData.record_date = new Date(submitData.record_date).toISOString().split('T')[0]
+  } else if (typeof submitData.record_date === 'string') {
+    // 处理字符串格式，确保是YYYY-MM-DD格式
+    const dateObj = new Date(submitData.record_date)
+    if (!isNaN(dateObj.getTime())) {
+      submitData.record_date = dateObj.toISOString().split('T')[0]
+    }
+  }
+  emit('submit', submitData)
 }
 </script>
