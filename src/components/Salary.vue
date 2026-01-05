@@ -180,6 +180,9 @@
           <div class="stat-item">
             <n-statistic label="年终奖平均" :value="averageBonus" suffix="元"/>
           </div>
+          <div class="stat-item">
+            <n-statistic label="平均年薪" :value="averageAnnualSalary" suffix="元"/>
+          </div>
         </div>
         
         <!-- 主图表容器 -->
@@ -575,6 +578,28 @@ const averageBonus = computed(() => {
   return bonusRecords.length === 0 ? 0 : (bonusRecords.reduce((sum, r) => sum + r.amount, 0) / bonusRecords.length).toFixed(2)
 })
 
+const averageAnnualSalary = computed(() => {
+  // 计算所选时间范围内的总收入
+  const total = timeFilteredRecords.value.reduce((sum, record) => sum + record.amount, 0)
+  
+  // 计算实际月份数（精确到月份）
+  const monthMap = new Map() // 存储每个年份包含的月份
+  
+  timeFilteredRecords.value.forEach(record => {
+    const recordDate = new Date(record.record_date)
+    const year = recordDate.getFullYear()
+    const month = recordDate.getMonth()
+    const key = `${year}-${month}`
+    monthMap.set(key, true)
+  })
+  
+  // 计算实际年份数（按12个月为一年计算）
+  const actualMonthCount = monthMap.size
+  const actualYearCount = actualMonthCount / 12
+  
+  return actualYearCount === 0 ? 0 : (total / actualYearCount).toFixed(2)
+})
+
 // 图表数据处理
 const chartData = computed(() => {
   // 首先获取所有原始记录
@@ -861,6 +886,11 @@ const updateChart = () => {
   const option = {
       tooltip: {
         trigger: 'axis',
+        triggerOn: 'mousemove',
+        axisPointer: {
+          type: 'cross',
+          animation: true
+        },
         formatter: function(params) {
           if (!params || params.length === 0) return ''
           
@@ -885,9 +915,6 @@ const updateChart = () => {
               <span>${name}: ${formattedValue}</span>
             </div>`
           })
-          
-          // 添加点击提示
-          result += `<div style="margin-top: 8px; font-size: 12px; color: #999;">点击查看完整数据</div>`
           return result
         }
       },
@@ -1041,6 +1068,11 @@ const updateAreaChart = () => {
   const option = {
     tooltip: {
       trigger: 'axis',
+      triggerOn: 'mousemove',
+      axisPointer: {
+        type: 'cross',
+        animation: true
+      },
       formatter: function(params) {
         if (!params || params.length === 0) return ''
         
@@ -1058,9 +1090,6 @@ const updateAreaChart = () => {
             <span>${name}: ${formattedValue}</span>
           </div>`
         })
-        
-        // 添加点击提示
-        result += `<div style="margin-top: 8px; font-size: 12px; color: #999;">点击查看完整数据</div>`
         return result
       }
     },
@@ -1168,6 +1197,7 @@ const updateAnnualBarChart = () => {
   const option = {
     tooltip: {
       trigger: 'axis',
+      triggerOn: 'mousemove',
       axisPointer: {
         type: 'shadow'
       },

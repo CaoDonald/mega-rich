@@ -1,64 +1,38 @@
 <template>
-  <div class="category-manager-container">
+  <div>
     <n-tabs v-model:value="activeTab">
       <n-tab-pane name="primary" tab="一级分类管理">
         <div class="category-section">
           <div class="section-header">
-            <h3>一级分类列表</h3>
-            <n-button type="primary" @click="showPrimaryCategoryForm = true">
-              <template #icon>
-                <n-icon><AddOutline /></n-icon>
-              </template>
-              添加一级分类
-            </n-button>
-          </div>
+          <h3>一级分类列表</h3>
+          <n-button type="primary" @click="showPrimaryCategoryForm = true">
+            <template #icon>
+              <n-icon><AddOutline /></n-icon>
+            </template>
+            新增
+          </n-button>
+        </div>
           
           <n-data-table
             :columns="primaryCategoryColumns"
             :data="primaryCategories"
             :pagination="{ pageSize: 10 }"
             :row-key="row => row.id"
-          >
-            <template #body-cell-actions="{ row }">
-              <div class="actions-cell">
-                <n-button
-                  type="info"
-                  size="small"
-                  @click="editPrimaryCategory(row)"
-                >
-                  <template #icon>
-                    <n-icon><CreateOutline /></n-icon>
-                  </template>
-                  编辑
-                </n-button>
-                <n-button
-                  type="error"
-                  size="small"
-                  @click="deletePrimaryCategory(row)"
-                  :disabled="hasSubcategories(row.id)"
-                >
-                  <template #icon>
-                    <n-icon><TrashOutline /></n-icon>
-                  </template>
-                  删除
-                </n-button>
-              </div>
-            </template>
-          </n-data-table>
+          />
         </div>
       </n-tab-pane>
       
       <n-tab-pane name="secondary" tab="二级分类管理">
         <div class="category-section">
           <div class="section-header">
-            <h3>二级分类列表</h3>
-            <n-button type="primary" @click="showSecondaryCategoryForm = true">
-              <template #icon>
-                <n-icon><AddOutline /></n-icon>
-              </template>
-              添加二级分类
-            </n-button>
-          </div>
+          <h3>二级分类列表</h3>
+          <n-button type="primary" @click="showSecondaryCategoryForm = true">
+            <template #icon>
+              <n-icon><AddOutline /></n-icon>
+            </template>
+            新增
+          </n-button>
+        </div>
           
           <n-select
             v-model:value="selectedPrimaryCategory"
@@ -72,32 +46,7 @@
             :data="filteredSecondaryCategories"
             :pagination="{ pageSize: 10 }"
             :row-key="row => row.id"
-          >
-            <template #body-cell-actions="{ row }">
-              <div class="actions-cell">
-                <n-button
-                  type="info"
-                  size="small"
-                  @click="editSecondaryCategory(row)"
-                >
-                  <template #icon>
-                    <n-icon><CreateOutline /></n-icon>
-                  </template>
-                  编辑
-                </n-button>
-                <n-button
-                  type="error"
-                  size="small"
-                  @click="deleteSecondaryCategory(row)"
-                >
-                  <template #icon>
-                    <n-icon><TrashOutline /></n-icon>
-                  </template>
-                  删除
-                </n-button>
-              </div>
-            </template>
-          </n-data-table>
+          />
         </div>
       </n-tab-pane>
     </n-tabs>
@@ -108,6 +57,9 @@
       :title="editingPrimaryCategory ? '编辑一级分类' : '添加一级分类'"
       preset="dialog"
       :destroy-on-close="true"
+      :width="auto"
+      :min-width="400"
+      :max-width="600"
     >
       <n-form label-placement="top">
         <n-form-item label="分类名称" required>
@@ -142,6 +94,9 @@
       :title="editingSecondaryCategory ? '编辑二级分类' : '添加二级分类'"
       preset="dialog"
       :destroy-on-close="true"
+      :width="auto"
+      :min-width="400"
+      :max-width="600"
     >
       <n-form label-placement="top">
         <n-form-item label="所属一级分类" required>
@@ -186,6 +141,9 @@
       negative-text="取消"
       positive-text="删除"
       @positive-click="confirmDelete"
+      :width="auto"
+      :min-width="300"
+      :max-width="400"
     >
       <div class="delete-confirm-content">
         <p>确定要删除这个分类吗？</p>
@@ -196,8 +154,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, h } from 'vue'
 import { useMessage } from 'naive-ui'
+import { NButton, NIcon } from 'naive-ui'
 import { AddOutline, CreateOutline, TrashOutline } from '@vicons/ionicons5'
 
 // 获取消息实例
@@ -258,8 +217,7 @@ const filteredSecondaryCategories = computed(() => {
 const primaryCategoryColumns = [
   {
     title: '分类名称',
-    key: 'name',
-    width: 150
+    key: 'name'
   },
   {
     title: '分类描述',
@@ -271,7 +229,6 @@ const primaryCategoryColumns = [
   {
     title: '创建时间',
     key: 'created_at',
-    width: 180,
     render(row) {
       return new Date(row.created_at).toLocaleString()
     }
@@ -279,8 +236,35 @@ const primaryCategoryColumns = [
   {
     title: '操作',
     key: 'actions',
-    width: 150,
-    fixed: 'right'
+    fixed: 'right',
+    render(row) {
+      return h('div', { class: 'actions-cell' }, [
+        h(NButton,
+          {
+            quaternary: true,
+            size: 'small',
+            onClick: () => editPrimaryCategory(row),
+            title: '编辑'
+          },
+          {
+            icon: () => h(NIcon, null, { default: () => h(CreateOutline) })
+          }
+        ),
+        h(NButton,
+          {
+            quaternary: true,
+            type: 'error',
+            size: 'small',
+            onClick: () => deletePrimaryCategory(row),
+            disabled: hasSubcategories(row.id),
+            title: '删除'
+          },
+          {
+            icon: () => h(NIcon, null, { default: () => h(TrashOutline) })
+          }
+        )
+      ])
+    }
   }
 ]
 
@@ -296,8 +280,7 @@ const secondaryCategoryColumns = [
   },
   {
     title: '分类名称',
-    key: 'name',
-    width: 150
+    key: 'name'
   },
   {
     title: '分类描述',
@@ -309,7 +292,6 @@ const secondaryCategoryColumns = [
   {
     title: '创建时间',
     key: 'created_at',
-    width: 180,
     render(row) {
       return new Date(row.created_at).toLocaleString()
     }
@@ -317,8 +299,34 @@ const secondaryCategoryColumns = [
   {
     title: '操作',
     key: 'actions',
-    width: 150,
-    fixed: 'right'
+    fixed: 'right',
+    render(row) {
+      return h('div', { class: 'actions-cell' }, [
+        h(NButton,
+          {
+            quaternary: true,
+            size: 'small',
+            onClick: () => editSecondaryCategory(row),
+            title: '编辑'
+          },
+          {
+            icon: () => h(NIcon, null, { default: () => h(CreateOutline) })
+          }
+        ),
+        h(NButton,
+          {
+            quaternary: true,
+            type: 'error',
+            size: 'small',
+            onClick: () => deleteSecondaryCategory(row),
+            title: '删除'
+          },
+          {
+            icon: () => h(NIcon, null, { default: () => h(TrashOutline) })
+          }
+        )
+      ])
+    }
   }
 ]
 
@@ -459,7 +467,6 @@ const resetSecondaryCategoryForm = () => {
 
 <style scoped>
 .category-manager-container {
-  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -556,21 +563,4 @@ const resetSecondaryCategoryForm = () => {
   font-size: 0.9rem;
 }
 
-@media (max-width: 768px) {
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  .primary-category-filter {
-    width: 100%;
-    max-width: 100%;
-  }
-  
-  .actions-cell {
-    flex-direction: column;
-    align-items: center;
-  }
-}
 </style>

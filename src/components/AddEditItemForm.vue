@@ -2,18 +2,13 @@
   <div class="form-container">
     <n-form label-placement="top">
       <n-form-item label="一级分类">
-        <div class="category-select-container">
-          <n-select
-            v-model:value="selectedCategory"
-            placeholder="选择一级分类"
-            :options="categoryOptions"
-            @update:value="handleCategoryChange"
-            style="width: 100%"
-          />
-          <n-button size="small" type="primary" @click="$emit('manage-categories')">
-            管理分类
-          </n-button>
-        </div>
+        <n-select
+          v-model:value="selectedCategory"
+          placeholder="选择一级分类"
+          :options="categoryOptions"
+          @update:value="handleCategoryChange"
+          style="width: 100%"
+        />
       </n-form-item>
       
       <n-form-item label="二级分类">
@@ -29,7 +24,6 @@
         <n-input-number
           v-model:value="formData.amount"
           placeholder="请输入金额"
-          :min="0.01"
           :step="0.01"
           :precision="2"
         />
@@ -123,7 +117,7 @@ const handleCategoryChange = (value) => {
 }
 
 const handleSubmit = async () => {
-  if (!formData.value.subcategory_id || formData.value.amount <= 0) {
+  if (!formData.value.subcategory_id || formData.value.amount === null || formData.value.amount === undefined) {
     message.error('请填写完整的表单信息')
     return
   }

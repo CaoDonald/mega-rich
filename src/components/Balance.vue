@@ -46,11 +46,23 @@
         placeholder="选择月份"
         class="filter-select"
       />
+      <n-select
+        v-model:value="selectedTimeRange"
+        placeholder="选择时间范围"
+        :options="timeRangeOptions"
+        class="filter-select"
+      />
       <n-button @click="applyFilters">
         <template #icon>
           <n-icon><SearchOutline /></n-icon>
         </template>
         筛选
+      </n-button>
+      <n-button @click="resetFilters">
+        <template #icon>
+          <n-icon><RefreshOutline /></n-icon>
+        </template>
+        重置
       </n-button>
     </div>
     
@@ -111,12 +123,120 @@
             <n-statistic label="总金额" :value="totalAmount" suffix="元" />
           </div>
           <div class="stat-item">
-            <n-statistic label="同比增长率" :value="yoyGrowthRate" suffix="%" />
+            <n-statistic label="本月金额" :value="latestMonthStats.currentAmount.toFixed(2)" suffix="元" />
           </div>
           <div class="stat-item">
-            <n-statistic label="环比增长率" :value="momGrowthRate" suffix="%" />
+            <n-statistic 
+              label="增长金额" 
+              :value="latestMonthStats.growth" 
+              suffix="元"
+              :value-style="{ color: latestMonthStats.growth >= 0 ? '#f53f3f' : '#18a058' }"
+            >
+              <template #prefix>
+                <n-icon v-if="latestMonthStats.growth > 0"><TrendingUpOutline /></n-icon>
+                <n-icon v-else-if="latestMonthStats.growth < 0"><TrendingDownOutline /></n-icon>
+              </template>
+            </n-statistic>
+          </div>
+          <div class="stat-item">
+            <n-statistic 
+              label="环比" 
+              :value="latestMonthStats.growthRate" 
+              suffix="%"
+              :value-style="{ color: latestMonthStats.growthRate >= 0 ? '#f53f3f' : '#18a058' }"
+            >
+              <template #prefix>
+                <n-icon v-if="latestMonthStats.growthRate > 0"><TrendingUpOutline /></n-icon>
+                <n-icon v-else-if="latestMonthStats.growthRate < 0"><TrendingDownOutline /></n-icon>
+              </template>
+            </n-statistic>
+          </div>
+          <div class="stat-item">
+            <n-statistic 
+              label="同比" 
+              :value="latestMonthStats.yoyGrowthRate" 
+              suffix="%"
+              :value-style="{ color: latestMonthStats.yoyGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
+            >
+              <template #prefix>
+                <n-icon v-if="latestMonthStats.yoyGrowthRate > 0"><TrendingUpOutline /></n-icon>
+                <n-icon v-else-if="latestMonthStats.yoyGrowthRate < 0"><TrendingDownOutline /></n-icon>
+              </template>
+            </n-statistic>
           </div>
         </div>
+      </n-card>
+    </div>
+
+    <!-- 图表配置区 -->
+    <div class="charts-config-section">
+      <div class="charts-config-actions">
+        <n-button @click="showCustomLimitsForm = !showCustomLimitsForm">
+          <template #icon>
+            <n-icon><SettingsOutline /></n-icon>
+          </template>
+          {{ showCustomLimitsForm ? '关闭' : '自定义图表上下限' }}
+        </n-button>
+      </div>
+      
+      <!-- 自定义图表上下限表单 -->
+      <n-card v-if="showCustomLimitsForm" class="custom-limits-form">
+        <h4>自定义图表上下限</h4>
+        <div class="form-row">
+          <n-input-number
+            v-model:value="customChartMin"
+            placeholder="最小值"
+            style="margin-right: 20px; width: 200px;"
+            step="100"
+          />
+          <n-input-number
+            v-model:value="customChartMax"
+            placeholder="最大值"
+            style="width: 200px;"
+            step="100"
+          />
+          <div class="form-actions">
+            <n-button @click="applyCustomLimits" type="primary" style="margin-right: 10px;">
+              应用
+            </n-button>
+            <n-button @click="resetCustomLimits">
+              重置
+            </n-button>
+          </div>
+        </div>
+      </n-card>
+    </div>
+
+    <!-- 折线图 -->
+    <div class="chart-section">
+      <n-card>
+        <v-chart
+          :option="lineChartOption"
+          :style="{ height: chartHeight }"
+          @click="handleChartClick"
+        />
+      </n-card>
+    </div>
+
+    <!-- 面积图 -->
+    <div class="chart-section">
+      <n-card>
+        <v-chart
+          :option="areaChartOption"
+          :style="{ height: chartHeight }"
+          @click="handleChartClick"
+        />
+      </n-card>
+    </div>
+
+    <!-- 年度汇总柱状图 -->
+    <div class="chart-section">
+      <n-card>
+        <v-chart
+          :option="annualBarChartOption"
+          :style="{ height: chartHeight }"
+          @click="handleChartClick"
+        />
       </n-card>
     </div>
     
@@ -126,13 +246,15 @@
       title="新增资金条目"
       preset="dialog"
       :destroy-on-close="true"
+      :width="auto"
+      :min-width="400"
+      :max-width="600"
     >
       <AddEditItemForm
         :categories="categories"
         :subcategories="subcategories"
         @submit="handleAddItem"
         @cancel="showAddItemModal = false"
-        @manage-categories="showCategoryManagerModal = true"
       />
     </n-modal>
     
@@ -142,6 +264,9 @@
       title="编辑资金条目"
       preset="dialog"
       :destroy-on-close="true"
+      :width="auto"
+      :min-width="400"
+      :max-width="600"
     >
       <AddEditItemForm
         v-if="editingItem"
@@ -150,7 +275,6 @@
         :item="editingItem"
         @submit="handleUpdateItem"
         @cancel="showEditItemModal = false"
-        @manage-categories="showCategoryManagerModal = true"
       />
     </n-modal>
     
@@ -160,6 +284,9 @@
       title="资金条目详情"
       preset="dialog"
       :destroy-on-close="true"
+      :width="auto"
+      :min-width="400"
+      :max-width="600"
     >
       <ItemDetail
         v-if="viewingItem"
@@ -178,6 +305,9 @@
       negative-text="取消"
       positive-text="删除"
       @positive-click="confirmDelete"
+      :width="auto"
+      :min-width="300"
+      :max-width="400"
     >
       <div class="delete-confirm-content">
         <p>确定要删除这条资金条目吗？</p>
@@ -192,7 +322,9 @@
       title="分类管理"
       preset="dialog"
       :destroy-on-close="true"
-      :width="800"
+      :width="auto"
+      :min-width="600"
+      :max-width="800"
     >
       <CategoryManagerModal
         :primary-categories="categories"
@@ -205,9 +337,32 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch, h } from 'vue'
 import { supabase } from '../supabase'
-import { useMessage } from 'naive-ui'
+import { useMessage, NIcon } from 'naive-ui'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { LineChart, BarChart } from 'echarts/charts'
+import {
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  GridComponent,
+  DataZoomComponent
+} from 'echarts/components'
+import VChart from 'vue-echarts'
+
+// 注册 ECharts 组件
+use([
+  CanvasRenderer,
+  LineChart,
+  BarChart,
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  GridComponent,
+  DataZoomComponent
+])
 import {
   AddOutline,
   RefreshOutline,
@@ -215,7 +370,11 @@ import {
   EyeOutline,
   CreateOutline,
   TrashOutline,
-  ListOutline
+  ListOutline,
+  TrendingUpOutline,
+  TrendingDownOutline,
+  SettingsOutline,
+  CashOutline
 } from '@vicons/ionicons5'
 import AddEditItemForm from './AddEditItemForm.vue'
 import ItemDetail from './ItemDetail.vue'
@@ -234,6 +393,17 @@ const items = ref([])
 const selectedCategory = ref(null)
 const selectedSubcategory = ref(null)
 const selectedDate = ref(null)
+const selectedTimeRange = ref('all')
+
+// 时间范围选项
+const timeRangeOptions = [
+  { label: '全部', value: 'all' },
+  { label: '今年', value: 'this_year' },
+  { label: '上一年', value: 'last_year' },
+  { label: '近一年', value: 'last_12_months' },
+  { label: '上三年', value: 'last_3_years' },
+  { label: '近三年', value: 'last_36_months' }
+]
 
 // 弹窗状态
 const showAddItemModal = ref(false)
@@ -241,6 +411,389 @@ const showEditItemModal = ref(false)
 const showViewItemModal = ref(false)
 const showDeleteConfirm = ref(false)
 const showCategoryManagerModal = ref(false)
+
+// 图表状态
+const chartHeight = ref('400px')
+const customChartMin = ref(null)
+const customChartMax = ref(null)
+const showCustomLimitsForm = ref(false)
+
+// 按时间范围筛选后的月度数据
+const timeFilteredMonthlyStats = computed(() => {
+  // 先根据时间范围筛选原始条目
+  const filtered = filterByTimeRange(items.value, selectedTimeRange.value)
+  
+  // 然后重新按月份分组
+  const monthlyData = new Map()
+  
+  filtered.forEach(item => {
+    const recordDate = new Date(item.record_date)
+    const year = recordDate.getFullYear()
+    const month = recordDate.getMonth()
+    const key = `${year}-${month}`
+    
+    if (!monthlyData.has(key)) {
+      monthlyData.set(key, { amount: 0, count: 0, items: [] })
+    }
+    
+    const monthData = monthlyData.get(key)
+    monthData.amount += item.amount
+    monthData.count += 1
+    monthData.items.push(item)
+    monthData.year = year
+    monthData.month = month
+  })
+  
+  // 转换为数组并按日期排序
+  return Array.from(monthlyData.entries())
+    .map(([key, data]) => ({ ...data, key }))
+    .sort((a, b) => {
+      const [yearA, monthA] = a.key.split('-').map(Number)
+      const [yearB, monthB] = b.key.split('-').map(Number)
+      if (yearA !== yearB) return yearA - yearB
+      return monthA - monthB
+    })
+})
+
+// 折线图数据
+const lineChartOption = computed(() => {
+  const stats = timeFilteredMonthlyStats.value
+  const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
+  const amountData = stats.map(stat => stat.amount)
+  
+  // 计算环比和同比数据
+  const growthRateData = stats.map((stat, index) => {
+    if (index === 0) return 0
+    const previousStat = stats[index - 1]
+    const growth = stat.amount - previousStat.amount
+    return previousStat.amount === 0 ? 0 : parseFloat(((growth / previousStat.amount) * 100).toFixed(2))
+  })
+  
+  const yoyGrowthRateData = stats.map((stat, index) => {
+    const [currentYear, currentMonth] = stat.key.split('-').map(Number)
+    const sameMonthLastYearKey = `${currentYear - 1}-${currentMonth}`
+    const sameMonthLastYearStat = stats.find(s => s.key === sameMonthLastYearKey)
+    if (!sameMonthLastYearStat) return 0
+    const growth = stat.amount - sameMonthLastYearStat.amount
+    return sameMonthLastYearStat.amount === 0 ? 0 : parseFloat(((growth / sameMonthLastYearStat.amount) * 100).toFixed(2))
+  })
+  
+  return {
+    title: {
+      text: '资金变化趋势',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross',
+        label: {
+          backgroundColor: '#6a7985'
+        }
+      },
+      triggerOn: 'mousemove'
+    },
+    legend: {
+      data: ['金额', '环比', '同比'],
+      top: 30
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: [
+      {
+        type: 'category',
+        boundaryGap: false,
+        data: xAxisData
+      }
+    ],
+    yAxis: [
+      {
+        type: 'value',
+        name: '金额(元)',
+        min: customChartMin.value !== null ? customChartMin.value : 'dataMin',
+        max: customChartMax.value !== null ? customChartMax.value : 'dataMax'
+      },
+      {
+        type: 'value',
+        name: '增长率(%)',
+        axisLabel: {
+          formatter: '{value}%'
+        }
+      }
+    ],
+    series: [
+      {
+        name: '金额',
+        type: 'line',
+        data: amountData,
+        smooth: true,
+        emphasis: {
+          focus: 'series'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(24, 160, 88, 0.3)' },
+              { offset: 1, color: 'rgba(24, 160, 88, 0.05)' }
+            ]
+          }
+        }
+      },
+      {
+        name: '环比',
+        type: 'line',
+        yAxisIndex: 1,
+        data: growthRateData,
+        smooth: true,
+        emphasis: {
+          focus: 'series'
+        },
+        itemStyle: {
+          color: '#f53f3f'
+        }
+      },
+      {
+        name: '同比',
+        type: 'line',
+        yAxisIndex: 1,
+        data: yoyGrowthRateData,
+        smooth: true,
+        emphasis: {
+          focus: 'series'
+        },
+        itemStyle: {
+          color: '#3b82f6'
+        }
+      }
+    ]
+  }
+})
+
+// 面积图数据
+const areaChartOption = computed(() => {
+  const stats = timeFilteredMonthlyStats.value
+  const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
+  
+  // 计算累计金额
+  let cumulativeTotal = 0
+  const cumulativeData = stats.map(stat => {
+    cumulativeTotal += stat.amount
+    return cumulativeTotal
+  })
+  
+  // 计算年度累计金额
+  let currentYear = null
+  let annualCumulative = 0
+  const annualCumulativeData = stats.map(stat => {
+    if (currentYear !== stat.year) {
+      currentYear = stat.year
+      annualCumulative = 0
+    }
+    annualCumulative += stat.amount
+    return annualCumulative
+  })
+  
+  return {
+    title: {
+      text: '累计金额变化',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross',
+        label: {
+          backgroundColor: '#6a7985'
+        }
+      },
+      triggerOn: 'mousemove'
+    },
+    legend: {
+      data: ['累计总金额', '年度累计金额'],
+      top: 30
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: xAxisData
+    },
+    yAxis: {
+      type: 'value',
+      name: '金额(元)',
+      min: customChartMin.value !== null ? customChartMin.value : 'dataMin',
+      max: customChartMax.value !== null ? customChartMax.value : 'dataMax'
+    },
+    series: [
+      {
+        name: '累计总金额',
+        type: 'line',
+        data: cumulativeData,
+        smooth: true,
+        emphasis: {
+          focus: 'series'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(59, 130, 246, 0.3)' },
+              { offset: 1, color: 'rgba(59, 130, 246, 0.05)' }
+            ]
+          }
+        }
+      },
+      {
+        name: '年度累计金额',
+        type: 'line',
+        data: annualCumulativeData,
+        smooth: true,
+        emphasis: {
+          focus: 'series'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(245, 63, 63, 0.3)' },
+              { offset: 1, color: 'rgba(245, 63, 63, 0.05)' }
+            ]
+          }
+        }
+      }
+    ]
+  }
+})
+
+// 年度汇总数据
+const annualSummary = computed(() => {
+  const annualData = new Map()
+  
+  items.value.forEach(item => {
+    const recordDate = new Date(item.record_date)
+    const year = recordDate.getFullYear()
+    
+    if (!annualData.has(year)) {
+      annualData.set(year, 0)
+    }
+    
+    annualData.set(year, annualData.get(year) + item.amount)
+  })
+  
+  // 转换为数组并按年份排序
+  return Array.from(annualData.entries())
+    .map(([year, amount]) => ({ year, amount }))
+    .sort((a, b) => a.year - b.year)
+})
+
+// 年度汇总柱状图数据
+const annualBarChartOption = computed(() => {
+  const data = annualSummary.value
+  const xAxisData = data.map(item => item.year)
+  const amountData = data.map(item => item.amount)
+  
+  return {
+    title: {
+      text: '年度资金汇总',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross',
+        label: {
+          backgroundColor: '#6a7985'
+        }
+      },
+      triggerOn: 'mousemove'
+    },
+    legend: {
+      data: ['金额', '趋势'],
+      top: 30
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: xAxisData
+    },
+    yAxis: {
+      type: 'value',
+      name: '金额(元)'
+    },
+    series: [
+      {
+        name: '金额',
+        type: 'bar',
+        data: amountData,
+        itemStyle: {
+          color: '#18a058'
+        }
+      },
+      {
+        name: '趋势',
+        type: 'line',
+        data: amountData,
+        smooth: true,
+        itemStyle: {
+          color: '#f53f3f'
+        },
+        emphasis: {
+          focus: 'series'
+        }
+      }
+    ]
+  }
+})
+
+// 图表点击事件
+const handleChartClick = (params) => {
+  message.info(`点击了: ${params.name} - ${params.value}`)
+}
+
+// 自定义图表上下限
+const applyCustomLimits = () => {
+  showCustomLimitsForm.value = false
+}
+
+const resetCustomLimits = () => {
+  customChartMin.value = null
+  customChartMax.value = null
+}
+
+// 监听筛选条件变化，重置自定义上下限
+watch(
+  [selectedCategory, selectedSubcategory, selectedDate, selectedTimeRange],
+  () => {
+    resetCustomLimits()
+  }
+)
 
 // 当前操作的条目
 const editingItem = ref(null)
@@ -261,6 +814,127 @@ const subcategoryOptions = computed(() => {
     .map(s => ({ label: s.name, value: s.id }))
 })
 
+// 按月份分组计算
+const monthlyStats = computed(() => {
+  const monthlyData = new Map()
+  
+  items.value.forEach(item => {
+    const recordDate = new Date(item.record_date)
+    const year = recordDate.getFullYear()
+    const month = recordDate.getMonth()
+    const key = `${year}-${month}`
+    
+    if (!monthlyData.has(key)) {
+      monthlyData.set(key, { amount: 0, count: 0, items: [] })
+    }
+    
+    const monthData = monthlyData.get(key)
+    monthData.amount += item.amount
+    monthData.count += 1
+    monthData.items.push(item)
+    monthData.year = year
+    monthData.month = month
+  })
+  
+  // 转换为数组并按日期排序
+  return Array.from(monthlyData.entries())
+    .map(([key, data]) => ({ ...data, key }))
+    .sort((a, b) => {
+      const [yearA, monthA] = a.key.split('-').map(Number)
+      const [yearB, monthB] = b.key.split('-').map(Number)
+      if (yearA !== yearB) return yearA - yearB
+      return monthA - monthB
+    })
+})
+
+// 计算增长、同比、环比
+const calculateGrowthStats = (currentAmount, currentKey, monthlyStats) => {
+  const [currentYear, currentMonth] = currentKey.split('-').map(Number)
+  
+  // 计算环比：与上月比较
+  const previousMonthKey = currentMonth === 0 
+    ? `${currentYear - 1}-${11}` 
+    : `${currentYear}-${currentMonth - 1}`
+  const previousMonthData = monthlyStats.find(stat => stat.key === previousMonthKey)
+  const previousAmount = previousMonthData?.amount || 0
+  
+  const growth = currentAmount - previousAmount
+  const growthRate = previousAmount === 0 ? 0 : ((growth / previousAmount) * 100).toFixed(2)
+  
+  // 计算同比：与去年同月比较
+  const sameMonthLastYearKey = `${currentYear - 1}-${currentMonth}`
+  const sameMonthLastYearData = monthlyStats.find(stat => stat.key === sameMonthLastYearKey)
+  const sameMonthLastYearAmount = sameMonthLastYearData?.amount || 0
+  
+  const yoyGrowth = currentAmount - sameMonthLastYearAmount
+  const yoyGrowthRate = sameMonthLastYearAmount === 0 ? 0 : ((yoyGrowth / sameMonthLastYearAmount) * 100).toFixed(2)
+  
+  return {
+    growth: parseFloat(growth.toFixed(2)),
+    growthRate: parseFloat(growthRate),
+    yoyGrowth: parseFloat(yoyGrowth.toFixed(2)),
+    yoyGrowthRate: parseFloat(yoyGrowthRate)
+  }
+}
+
+// 统计信息
+const totalAmount = computed(() => {
+  return filteredItems.value.reduce((sum, item) => sum + item.amount, 0).toFixed(2)
+})
+
+const latestMonthStats = computed(() => {
+  if (monthlyStats.value.length === 0) {
+    return {
+      currentAmount: 0,
+      growth: 0,
+      growthRate: 0,
+      yoyGrowth: 0,
+      yoyGrowthRate: 0
+    }
+  }
+  
+  // 获取最新月份数据
+  const latestStat = monthlyStats.value[monthlyStats.value.length - 1]
+  const currentAmount = latestStat.amount
+  
+  return {
+    currentAmount,
+    ...calculateGrowthStats(currentAmount, latestStat.key, monthlyStats.value)
+  }
+})
+
+// 根据时间范围筛选
+const filterByTimeRange = (items, timeRange) => {
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  
+  return items.filter(item => {
+    const itemDate = new Date(item.record_date)
+    const itemYear = itemDate.getFullYear()
+    
+    switch (timeRange) {
+      case 'this_year':
+        return itemYear === currentYear
+      case 'last_year':
+        return itemYear === currentYear - 1
+      case 'last_12_months':
+        const oneYearAgo = new Date()
+        oneYearAgo.setFullYear(now.getFullYear() - 1)
+        return itemDate >= oneYearAgo
+      case 'last_3_years':
+        return itemYear >= currentYear - 3 && itemYear < currentYear
+      case 'last_36_months':
+        const threeYearsAgo = new Date()
+        threeYearsAgo.setFullYear(now.getFullYear() - 3)
+        return itemDate >= threeYearsAgo
+      case 'all':
+      default:
+        return true
+    }
+  })
+}
+
+// 筛选后的条目
 const filteredItems = computed(() => {
   let result = [...items.value]
   
@@ -287,24 +961,11 @@ const filteredItems = computed(() => {
     })
   }
   
+  // 按时间范围筛选
+  result = filterByTimeRange(result, selectedTimeRange.value)
+  
   // 按日期降序排序
   return result.sort((a, b) => new Date(b.record_date) - new Date(a.record_date))
-})
-
-const totalAmount = computed(() => {
-  return filteredItems.value.reduce((sum, item) => sum + item.amount, 0).toFixed(2)
-})
-
-const yoyGrowthRate = computed(() => {
-  // 简单计算：使用最新条目的同比增长率
-  const latestItem = filteredItems.value[0]
-  return latestItem?.yoy_growth_rate || 0
-})
-
-const momGrowthRate = computed(() => {
-  // 简单计算：使用最新条目的环比增长率
-  const latestItem = filteredItems.value[0]
-  return latestItem?.mom_growth_rate || 0
 })
 
 // 表格列配置
@@ -332,9 +993,22 @@ const columns = [
   {
     title: '金额',
     key: 'amount',
-    width: 120,
+    width: 140,
     render(row) {
-      return `${row.amount.toFixed(2)}元`
+      const isPositive = row.amount >= 0
+      return h('div', {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          color: isPositive ? '#18a058' : '#f53f3f'
+        }
+      }, [
+        h(NIcon, null, {
+          default: () => isPositive ? h(CashOutline) : h(CashOutline)
+        }),
+        `${isPositive ? '+' : ''}${row.amount.toFixed(2)}元`
+      ])
     }
   },
   {
@@ -343,29 +1017,6 @@ const columns = [
     width: 150,
     render(row) {
       return new Date(row.record_date).toLocaleDateString()
-    }
-  },
-  {
-    title: '同比增长率',
-    key: 'yoy_growth_rate',
-    width: 120,
-    render(row) {
-      return `${row.yoy_growth_rate || 0}%`
-    }
-  },
-  {
-    title: '环比增长率',
-    key: 'mom_growth_rate',
-    width: 120,
-    render(row) {
-      return `${row.mom_growth_rate || 0}%`
-    }
-  },
-  {
-    title: '描述',
-    key: 'description',
-    ellipsis: {
-      tooltip: true
     }
   },
   {
@@ -422,6 +1073,21 @@ const handleCategoryChange = (value) => {
 const applyFilters = () => {
   // 筛选逻辑已在computed属性中实现
 }
+
+const resetFilters = () => {
+  selectedCategory.value = null
+  selectedSubcategory.value = null
+  selectedDate.value = null
+  selectedTimeRange.value = 'all'
+}
+
+// 实时筛选：当筛选条件变化时，自动应用筛选
+watch(
+  [selectedCategory, selectedSubcategory, selectedDate, selectedTimeRange],
+  () => {
+    // 筛选逻辑已在computed属性中实现，这里可以添加额外的逻辑
+  }
+)
 
 const handleAddItem = async (formData) => {
   try {
@@ -892,6 +1558,54 @@ onMounted(() => {
   padding: 20px 0;
 }
 
+/* 图表相关样式 */
+.chart-section {
+  margin-bottom: 30px;
+}
+
+.chart-section :deep(.n-card) {
+  border-radius: var(--custom-border-radius);
+  box-shadow: var(--custom-box-shadow);
+  border: var(--custom-border);
+  overflow: hidden;
+}
+
+.charts-config-section {
+  margin-bottom: 30px;
+}
+
+.charts-config-actions {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.custom-limits-form {
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: var(--custom-border-radius);
+  border: var(--custom-border);
+}
+
+.custom-limits-form h4 {
+  margin: 0 0 20px 0;
+  font-size: 1.1rem;
+  color: var(--custom-color);
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.form-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+}
+
 @media (max-width: 768px) {
   .balance-container {
     padding: 20px 15px;
@@ -936,6 +1650,21 @@ onMounted(() => {
     display: block;
     width: 100%;
     margin-bottom: 5px;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .form-actions {
+    margin-left: 0;
+    margin-top: 15px;
+    align-self: flex-end;
+  }
+  
+  .chart-section :deep(.n-card) {
+    padding: 10px;
   }
 }
 </style>
