@@ -78,7 +78,9 @@
             <n-radio-group v-model:value="timeRange" button-style="solid">
               <n-radio-button value="all">全部</n-radio-button>
               <n-radio-button value="thisYear">今年</n-radio-button>
+              <n-radio-button value="lastYear">上一年</n-radio-button>
               <n-radio-button value="1y">近一年</n-radio-button>
+              <n-radio-button value="last3Years">上三年</n-radio-button>
               <n-radio-button value="3y">近三年</n-radio-button>
             </n-radio-group>
           </div>
@@ -188,6 +190,11 @@
         <!-- 面积图容器 -->
         <div class="chart-container" style="margin-top: 30px;">
           <div ref="areaChartRef" class="chart" style="width: 100%; height: 400px;"></div>
+        </div>
+        
+        <!-- 年度收入柱状图容器 -->
+        <div class="chart-container" style="margin-top: 30px;">
+          <div ref="annualBarChartRef" class="chart" style="width: 100%; height: 400px;"></div>
         </div>
       </n-card>
     </div>
@@ -383,6 +390,8 @@ const chartRef = ref(null)
 const chartInstance = ref(null)
 const areaChartRef = ref(null)
 const areaChartInstance = ref(null)
+const annualBarChartRef = ref(null)
+const annualBarChartInstance = ref(null)
 const timeRange = ref('all') // 'all', '1y', '3y', 'thisYear'
 
 // 自定义上下限状态
@@ -530,6 +539,22 @@ const timeFilteredRecords = computed(() => {
     // 今年
     const thisYearStart = new Date(currentYear, 0, 1)
     result = result.filter(r => new Date(r.record_date) >= thisYearStart)
+  } else if (timeRange.value === 'lastYear') {
+    // 上一年（去年完整自然年）
+    const lastYearStart = new Date(currentYear - 1, 0, 1)
+    const lastYearEnd = new Date(currentYear, 0, 0)
+    result = result.filter(r => {
+      const recordDate = new Date(r.record_date)
+      return recordDate >= lastYearStart && recordDate <= lastYearEnd
+    })
+  } else if (timeRange.value === 'last3Years') {
+    // 上三年（前三个完整自然年）
+    const threeYearsAgoStart = new Date(currentYear - 3, 0, 1)
+    const lastYearEnd = new Date(currentYear, 0, 0)
+    result = result.filter(r => {
+      const recordDate = new Date(r.record_date)
+      return recordDate >= threeYearsAgoStart && recordDate <= lastYearEnd
+    })
   }
   
   return result
@@ -585,6 +610,22 @@ const chartData = computed(() => {
   } else if (timeRange.value === 'thisYear') {
     const thisYearStart = new Date(currentYear, 0, 1)
     chartRecords = chartRecords.filter(r => new Date(r.record_date) >= thisYearStart)
+  } else if (timeRange.value === 'lastYear') {
+    // 上一年（去年完整自然年）
+    const lastYearStart = new Date(currentYear - 1, 0, 1)
+    const lastYearEnd = new Date(currentYear, 0, 0)
+    chartRecords = chartRecords.filter(r => {
+      const recordDate = new Date(r.record_date)
+      return recordDate >= lastYearStart && recordDate <= lastYearEnd
+    })
+  } else if (timeRange.value === 'last3Years') {
+    // 上三年（前三个完整自然年）
+    const threeYearsAgoStart = new Date(currentYear - 3, 0, 1)
+    const lastYearEnd = new Date(currentYear, 0, 0)
+    chartRecords = chartRecords.filter(r => {
+      const recordDate = new Date(r.record_date)
+      return recordDate >= threeYearsAgoStart && recordDate <= lastYearEnd
+    })
   }
   
   // 按日期排序（从旧到新）
@@ -689,20 +730,37 @@ const chartData = computed(() => {
     return cumulativeTotal
   })
   
-  // 计算本年累计收入
-  const currentYearVal = new Date().getFullYear()
-  let cumulativeThisYear = 0
+  // 计算每年累计收入 - 改进版本：显示每年独立累计，更有比较价值
+  let cumulativeByYear = {} // 按年份存储累计值
   const cumulativeThisYearData = sortedData.map(item => {
     const itemYear = parseInt(item.month.split('-')[0])
-    if (itemYear === currentYearVal) {
-      cumulativeThisYear += item.amount
-    } else if (itemYear > currentYearVal) {
-      cumulativeThisYear = item.amount // 处理未来年份数据
-    } else {
-      cumulativeThisYear = 0 // 重置为0
+    
+    // 初始化该年份的累计值
+    if (!cumulativeByYear[itemYear]) {
+      cumulativeByYear[itemYear] = 0
     }
-    return cumulativeThisYear
+    
+    // 累计该月份金额（每个年份独立累计）
+    cumulativeByYear[itemYear] += item.amount
+    
+    // 返回该年份的累计值，这样可以看到每年的累计趋势
+    return cumulativeByYear[itemYear]
   })
+  
+  // 计算年度收入数据
+  const annualData = {} // 按年份存储总收入
+  sortedData.forEach(item => {
+    const year = parseInt(item.month.split('-')[0])
+    if (!annualData[year]) {
+      annualData[year] = 0
+    }
+    annualData[year] += item.amount
+  })
+  
+  // 转换为数组并按年份排序
+  const annualDataArray = Object.entries(annualData)
+    .map(([year, amount]) => ({ year: parseInt(year), amount }))
+    .sort((a, b) => a.year - b.year)
   
   return {
     months,
@@ -711,7 +769,8 @@ const chartData = computed(() => {
     yoyData,
     momData,
     cumulativeTotalData,
-    cumulativeThisYearData
+    cumulativeThisYearData,
+    annualData: annualDataArray
   }
 })
 
@@ -801,7 +860,36 @@ const updateChart = () => {
   
   const option = {
       tooltip: {
-        trigger: 'axis'
+        trigger: 'axis',
+        formatter: function(params) {
+          if (!params || params.length === 0) return ''
+          
+          const month = params[0].axisValue || '未知月份'
+          let result = `<div style="font-weight: bold; margin-bottom: 8px;">${month}</div>`
+          
+          // 格式化显示每个系列的数据
+          params.forEach(item => {
+            const value = item.value
+            const name = item.seriesName
+            let formattedValue = value
+            
+            // 根据系列名称格式化数据
+            if (name === '同比' || name === '环比') {
+              formattedValue = `${value.toFixed(2)}%`
+            } else {
+              formattedValue = `${value.toFixed(2)}元`
+            }
+            
+            result += `<div style="display: flex; align-items: center; margin: 4px 0;">
+              <span style="display: inline-block; width: 10px; height: 10px; background-color: ${item.color}; border-radius: 50%; margin-right: 8px;"></span>
+              <span>${name}: ${formattedValue}</span>
+            </div>`
+          })
+          
+          // 添加点击提示
+          result += `<div style="margin-top: 8px; font-size: 12px; color: #999;">点击查看完整数据</div>`
+          return result
+        }
       },
       legend: {
         data: ['月薪', '增长', '同比', '环比'],
@@ -881,18 +969,21 @@ const updateChart = () => {
 watch(records, () => {
   updateChart()
   updateAreaChart()
+  updateAnnualBarChart()
 }, { deep: true })
 
 // 监听时间范围变化，更新图表
 watch(timeRange, () => {
   updateChart()
   updateAreaChart()
+  updateAnnualBarChart()
 })
 
 // 监听窗口大小变化，调整图表
 const handleResize = () => {
   chartInstance.value?.resize()
   areaChartInstance.value?.resize()
+  annualBarChartInstance.value?.resize()
 }
 
 // 重置上下限设置
@@ -928,6 +1019,19 @@ const initAreaChart = () => {
   updateAreaChart()
 }
 
+// 初始化年度收入柱状图
+const initAnnualBarChart = () => {
+  if (!annualBarChartRef.value) return
+  
+  // 销毁已有实例
+  if (annualBarChartInstance.value) {
+    annualBarChartInstance.value.dispose()
+  }
+  
+  annualBarChartInstance.value = echarts.init(annualBarChartRef.value)
+  updateAnnualBarChart()
+}
+
 // 更新面积图
 const updateAreaChart = () => {
   if (!areaChartInstance.value) return
@@ -936,10 +1040,32 @@ const updateAreaChart = () => {
   
   const option = {
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      formatter: function(params) {
+        if (!params || params.length === 0) return ''
+        
+        const month = params[0].axisValue || '未知月份'
+        let result = `<div style="font-weight: bold; margin-bottom: 8px;">${month}</div>`
+        
+        // 格式化显示每个系列的数据
+        params.forEach(item => {
+          const value = item.value
+          const name = item.seriesName
+          const formattedValue = `${value.toFixed(2)}元`
+          
+          result += `<div style="display: flex; align-items: center; margin: 4px 0;">
+            <span style="display: inline-block; width: 10px; height: 10px; background-color: ${item.color}; border-radius: 50%; margin-right: 8px;"></span>
+            <span>${name}: ${formattedValue}</span>
+          </div>`
+        })
+        
+        // 添加点击提示
+        result += `<div style="margin-top: 8px; font-size: 12px; color: #999;">点击查看完整数据</div>`
+        return result
+      }
     },
     legend: {
-      data: ['累计总收入', '本年累计收入'],
+      data: ['累计总收入', '年度累计收入'],
       top: 10,
       left: 'center'
     },
@@ -1000,7 +1126,7 @@ const updateAreaChart = () => {
         }
       },
       {
-        name: '本年累计收入',
+        name: '年度累计收入',
         type: 'line',
         data: cumulativeThisYearData,
         smooth: true,
@@ -1029,6 +1155,113 @@ const updateAreaChart = () => {
   areaChartInstance.value.setOption(option)
 }
 
+// 更新年度收入柱状图
+const updateAnnualBarChart = () => {
+  if (!annualBarChartInstance.value) return
+  
+  const { annualData } = chartData.value
+  
+  // 提取年度数据
+  const years = annualData.map(item => item.year)
+  const amounts = annualData.map(item => item.amount)
+  
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      },
+      formatter: function(params) {
+        if (!params || params.length === 0) return ''
+        const item = params[0]
+        return `${item.name}年<br/>总收入：${item.value.toFixed(2)}元`
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '10%',
+      top: '15%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: years,
+      axisLabel: {
+        interval: 0,
+        rotate: 0,
+        fontSize: 12
+      }
+    },
+    yAxis: {
+      type: 'value',
+      name: '金额（元）',
+      axisLabel: {
+        formatter: '{value}'
+      }
+    },
+    series: [
+      {
+        name: '年度收入',
+        type: 'bar',
+        data: amounts,
+        itemStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: '#5b8ff9' },
+              { offset: 1, color: '#3b5998' }
+            ]
+          }
+        },
+        emphasis: {
+          itemStyle: {
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: '#67c23a' },
+                { offset: 1, color: '#85ce61' }
+              ]
+            }
+          }
+        }
+      },
+      {
+        name: '年度收入趋势',
+        type: 'line',
+        data: amounts,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: {
+          color: '#f53f3f',
+          width: 2
+        },
+        itemStyle: {
+          color: '#f53f3f',
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        emphasis: {
+          itemStyle: {
+            symbolSize: 8
+          }
+        }
+      }
+    ]
+  }
+  
+  annualBarChartInstance.value.setOption(option)
+}
+
 // 组件挂载时初始化
 onMounted(() => {
   console.log('组件挂载，加载数据')
@@ -1038,6 +1271,7 @@ onMounted(() => {
   setTimeout(() => {
     initChart()
     initAreaChart()
+    initAnnualBarChart()
     window.addEventListener('resize', handleResize)
   }, 100)
 })
@@ -1046,6 +1280,7 @@ onMounted(() => {
 const cleanup = () => {
   chartInstance.value?.dispose()
   areaChartInstance.value?.dispose()
+  annualBarChartInstance.value?.dispose()
   window.removeEventListener('resize', handleResize)
 }
 
