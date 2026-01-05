@@ -84,6 +84,90 @@
           </div>
         </div>
         
+        <!-- 上下限设置表单 -->
+        <n-collapse v-model:expanded-names="expandedNames" style="margin-bottom: 20px;">
+          <n-collapse-item name="limitSettings" title="自定义上下限">
+            <div class="limit-settings-form">
+              <div class="limit-item">
+                <h4>月薪（元）</h4>
+                <div class="limit-inputs">
+                  <n-input 
+                    v-model:value="customLimits.salary.min" 
+                    type="number" 
+                    placeholder="最小值" 
+                    style="width: 100px; margin-right: 10px;"
+                  />
+                  <n-input 
+                    v-model:value="customLimits.salary.max" 
+                    type="number" 
+                    placeholder="最大值" 
+                    style="width: 100px;"
+                  />
+                </div>
+              </div>
+              
+              <div class="limit-item">
+                <h4>增长（元）</h4>
+                <div class="limit-inputs">
+                  <n-input 
+                    v-model:value="customLimits.growth.min" 
+                    type="number" 
+                    placeholder="最小值" 
+                    style="width: 100px; margin-right: 10px;"
+                  />
+                  <n-input 
+                    v-model:value="customLimits.growth.max" 
+                    type="number" 
+                    placeholder="最大值" 
+                    style="width: 100px;"
+                  />
+                </div>
+              </div>
+              
+              <div class="limit-item">
+                <h4>同比（%）</h4>
+                <div class="limit-inputs">
+                  <n-input 
+                    v-model:value="customLimits.yoy.min" 
+                    type="number" 
+                    placeholder="最小值" 
+                    style="width: 100px; margin-right: 10px;"
+                  />
+                  <n-input 
+                    v-model:value="customLimits.yoy.max" 
+                    type="number" 
+                    placeholder="最大值" 
+                    style="width: 100px;"
+                  />
+                </div>
+              </div>
+              
+              <div class="limit-item">
+                <h4>环比（%）</h4>
+                <div class="limit-inputs">
+                  <n-input 
+                    v-model:value="customLimits.mom.min" 
+                    type="number" 
+                    placeholder="最小值" 
+                    style="width: 100px; margin-right: 10px;"
+                  />
+                  <n-input 
+                    v-model:value="customLimits.mom.max" 
+                    type="number" 
+                    placeholder="最大值" 
+                    style="width: 100px;"
+                  />
+                </div>
+              </div>
+              
+              <div class="limit-actions">
+                <n-button type="primary" @click="updateChart">应用设置</n-button>
+                <n-button @click="resetLimits">重置</n-button>
+              </div>
+            </div>
+          </n-collapse-item>
+        </n-collapse>
+        
         <div class="stats-grid">
           <div class="stat-item">
             <n-statistic label="总金额" :value="totalAmount" suffix="元"/>
@@ -96,9 +180,14 @@
           </div>
         </div>
         
-        <!-- 图表容器 -->
+        <!-- 主图表容器 -->
         <div class="chart-container">
           <div ref="chartRef" class="chart" style="width: 100%; height: 400px;"></div>
+        </div>
+        
+        <!-- 面积图容器 -->
+        <div class="chart-container" style="margin-top: 30px;">
+          <div ref="areaChartRef" class="chart" style="width: 100%; height: 400px;"></div>
         </div>
       </n-card>
     </div>
@@ -292,7 +381,20 @@ const selectedDate = ref(null)
 // 图表相关状态
 const chartRef = ref(null)
 const chartInstance = ref(null)
+const areaChartRef = ref(null)
+const areaChartInstance = ref(null)
 const timeRange = ref('all') // 'all', '1y', '3y', 'thisYear'
+
+// 自定义上下限状态
+const customLimits = ref({
+  salary: { min: null, max: null },
+  growth: { min: null, max: null },
+  yoy: { min: null, max: null },
+  mom: { min: null, max: null }
+})
+
+// 显示/隐藏上下限设置
+const expandedNames = ref([])
 
 // 弹窗状态
 const showAddModal = ref(false)
@@ -572,14 +674,44 @@ const chartData = computed(() => {
   // 提取图表所需数据
   const months = sortedData.map(item => item.month)
   const amounts = sortedData.map(item => item.amount)
+  // 计算增长数据
+  const growthData = sortedData.map((item, index) => {
+    if (index === 0) return 0 // 第一个月没有增长数据
+    return item.amount - sortedData[index - 1].amount
+  })
   const yoyData = sortedData.map(item => item.yoy)
   const momData = sortedData.map(item => item.mom)
+  
+  // 计算累计总收入
+  let cumulativeTotal = 0
+  const cumulativeTotalData = sortedData.map(item => {
+    cumulativeTotal += item.amount
+    return cumulativeTotal
+  })
+  
+  // 计算本年累计收入
+  const currentYearVal = new Date().getFullYear()
+  let cumulativeThisYear = 0
+  const cumulativeThisYearData = sortedData.map(item => {
+    const itemYear = parseInt(item.month.split('-')[0])
+    if (itemYear === currentYearVal) {
+      cumulativeThisYear += item.amount
+    } else if (itemYear > currentYearVal) {
+      cumulativeThisYear = item.amount // 处理未来年份数据
+    } else {
+      cumulativeThisYear = 0 // 重置为0
+    }
+    return cumulativeThisYear
+  })
   
   return {
     months,
     amounts,
+    growthData,
     yoyData,
-    momData
+    momData,
+    cumulativeTotalData,
+    cumulativeThisYearData
   }
 })
 
@@ -603,14 +735,211 @@ const initChart = () => {
 const updateChart = () => {
   if (!chartInstance.value) return
   
-  const { months, amounts, yoyData, momData } = chartData.value
+  const { months, amounts, growthData, yoyData, momData, cumulativeTotalData, cumulativeThisYearData } = chartData.value
+  
+  // 处理数据，将超出上下限的数据显示在上下限上
+  const processData = (data, min, max) => {
+    return data.map(value => {
+      if (min !== null && value < min) return parseFloat(min)
+      if (max !== null && value > max) return parseFloat(max)
+      return value
+    })
+  }
+  
+  // 应用上下限处理
+  const processedAmounts = processData(amounts, customLimits.value.salary.min, customLimits.value.salary.max)
+  const processedGrowthData = processData(growthData, customLimits.value.growth.min, customLimits.value.growth.max)
+  const processedYoyData = processData(yoyData, customLimits.value.yoy.min, customLimits.value.yoy.max)
+  const processedMomData = processData(momData, customLimits.value.mom.min, customLimits.value.mom.max)
+  const processedCumulativeTotal = processData(cumulativeTotalData, null, null) // 累计总收入不应用上下限
+  const processedCumulativeThisYear = processData(cumulativeThisYearData, null, null) // 本年累计收入不应用上下限
+  
+  // 设置y轴上下限
+  const yAxis1 = {
+    type: 'value',
+    name: '金额（元）',
+    position: 'left',
+    axisLabel: {
+      formatter: '{value}'
+    },
+    // 应用自定义上下限
+    min: customLimits.value.salary.min !== null ? parseFloat(customLimits.value.salary.min) : undefined,
+    max: customLimits.value.salary.max !== null ? parseFloat(customLimits.value.salary.max) : undefined
+  }
+  
+  const yAxis2 = {
+    type: 'value',
+    name: '增长率（%）',
+    position: 'right',
+    axisLabel: {
+      formatter: '{value}%'
+    },
+    // 0%位置加粗
+    splitLine: {
+      show: true,
+      lineStyle: {
+        color: '#999',
+        type: 'solid',
+        width: 1
+      }
+    },
+    axisLine: {
+      onZero: true,
+      lineStyle: {
+        color: '#333',
+        width: 2
+      }
+    },
+    axisTick: {
+      show: true,
+      alignWithLabel: true
+    },
+    // 应用自定义上下限
+    min: customLimits.value.yoy.min !== null ? parseFloat(customLimits.value.yoy.min) : undefined,
+    max: customLimits.value.yoy.max !== null ? parseFloat(customLimits.value.yoy.max) : undefined
+  }
+  
+  const option = {
+      tooltip: {
+        trigger: 'axis'
+      },
+      legend: {
+        data: ['月薪', '增长', '同比', '环比'],
+        top: 10,
+        left: 'center'
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '25%',
+        top: '15%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: months,
+        axisLabel: {
+          interval: 1,
+          rotate: 60,
+          margin: 25,
+          fontSize: 12
+        },
+        axisLine: {
+          onZero: true
+        }
+      },
+      yAxis: [yAxis1, yAxis2],
+      series: [
+        {
+          name: '月薪',
+          type: 'line',
+          data: processedAmounts,
+          smooth: true,
+          symbol: 'none', // 移除折线上的点
+          itemStyle: {
+            color: '#2080f0'
+          }
+        },
+        {
+          name: '增长',
+          type: 'bar',
+          data: processedGrowthData,
+          itemStyle: {
+            color: '#ff9800'
+          }
+        },
+        {
+          name: '同比',
+          type: 'line',
+          yAxisIndex: 1,
+          data: processedYoyData,
+          smooth: true,
+          symbol: 'none', // 移除折线上的点
+          itemStyle: {
+            color: '#f53f3f'
+          }
+        },
+        {
+          name: '环比',
+          type: 'line',
+          yAxisIndex: 1,
+          data: processedMomData,
+          smooth: true,
+          symbol: 'none', // 移除折线上的点
+          itemStyle: {
+            color: '#18a058'
+          }
+        }
+      ]
+    }
+  
+  chartInstance.value.setOption(option)
+}
+
+// 监听记录变化，更新图表
+watch(records, () => {
+  updateChart()
+  updateAreaChart()
+}, { deep: true })
+
+// 监听时间范围变化，更新图表
+watch(timeRange, () => {
+  updateChart()
+  updateAreaChart()
+})
+
+// 监听窗口大小变化，调整图表
+const handleResize = () => {
+  chartInstance.value?.resize()
+  areaChartInstance.value?.resize()
+}
+
+// 重置上下限设置
+const resetLimits = () => {
+  customLimits.value = {
+    salary: { min: null, max: null },
+    growth: { min: null, max: null },
+    yoy: { min: null, max: null },
+    mom: { min: null, max: null }
+  }
+  updateChart()
+}
+
+// 切换上下限设置面板
+const toggleLimitSettings = () => {
+  if (expandedNames.value.includes('limitSettings')) {
+    expandedNames.value = expandedNames.value.filter(name => name !== 'limitSettings')
+  } else {
+    expandedNames.value.push('limitSettings')
+  }
+}
+
+// 初始化面积图
+const initAreaChart = () => {
+  if (!areaChartRef.value) return
+  
+  // 销毁已有实例
+  if (areaChartInstance.value) {
+    areaChartInstance.value.dispose()
+  }
+  
+  areaChartInstance.value = echarts.init(areaChartRef.value)
+  updateAreaChart()
+}
+
+// 更新面积图
+const updateAreaChart = () => {
+  if (!areaChartInstance.value) return
+  
+  const { months, cumulativeTotalData, cumulativeThisYearData } = chartData.value
   
   const option = {
     tooltip: {
       trigger: 'axis'
     },
     legend: {
-      data: ['月薪', '同比', '环比'],
+      data: ['累计总收入', '本年累计收入'],
       top: 10,
       left: 'center'
     },
@@ -638,96 +967,69 @@ const updateChart = () => {
     yAxis: [
       {
         type: 'value',
-        name: '月薪（元）',
+        name: '金额（元）',
         position: 'left',
         axisLabel: {
           formatter: '{value}'
-        }
-      },
-      {
-        type: 'value',
-        name: '增长率（%）',
-        position: 'right',
-        axisLabel: {
-          formatter: '{value}%'
-        },
-        // 0%位置加粗
-        splitLine: {
-          show: true,
-          lineStyle: {
-            color: '#999',
-            type: 'solid',
-            width: 1
-          }
-        },
-        axisLine: {
-          onZero: true,
-          lineStyle: {
-            color: '#333',
-            width: 2
-          }
-        },
-        axisTick: {
-          show: true,
-          alignWithLabel: true
         }
       }
     ],
     series: [
       {
-        name: '月薪',
+        name: '累计总收入',
         type: 'line',
-        data: amounts,
+        data: cumulativeTotalData,
         smooth: true,
-        symbol: 'none', // 移除折线上的点
-        itemStyle: {
-          color: '#2080f0'
+        symbol: 'none',
+        lineStyle: {
+          color: '#67c23a',
+          width: 1
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(103, 194, 58, 0.3)' },
+              { offset: 1, color: 'rgba(103, 194, 58, 0.05)' }
+            ]
+          }
         }
       },
       {
-        name: '同比',
+        name: '本年累计收入',
         type: 'line',
-        yAxisIndex: 1,
-        data: yoyData,
+        data: cumulativeThisYearData,
         smooth: true,
-        symbol: 'none', // 移除折线上的点
-        itemStyle: {
-          color: '#f53f3f'
-        }
-      },
-      {
-        name: '环比',
-        type: 'line',
-        yAxisIndex: 1,
-        data: momData,
-        smooth: true,
-        symbol: 'none', // 移除折线上的点
-        itemStyle: {
-          color: '#18a058'
+        symbol: 'none',
+        lineStyle: {
+          color: '#e6a23c',
+          width: 1
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(230, 162, 60, 0.3)' },
+              { offset: 1, color: 'rgba(230, 162, 60, 0.05)' }
+            ]
+          }
         }
       }
     ]
   }
   
-  chartInstance.value.setOption(option)
+  areaChartInstance.value.setOption(option)
 }
 
-// 监听记录变化，更新图表
-watch(records, () => {
-  updateChart()
-}, { deep: true })
-
-// 监听时间范围变化，更新图表
-watch(timeRange, () => {
-  updateChart()
-})
-
-// 监听窗口大小变化，调整图表
-const handleResize = () => {
-  chartInstance.value?.resize()
-}
-
-// 组件卸载时销毁图表
+// 组件挂载时初始化
 onMounted(() => {
   console.log('组件挂载，加载数据')
   loadData()
@@ -735,6 +1037,7 @@ onMounted(() => {
   // 延迟初始化图表，确保DOM已渲染
   setTimeout(() => {
     initChart()
+    initAreaChart()
     window.addEventListener('resize', handleResize)
   }, 100)
 })
@@ -742,6 +1045,7 @@ onMounted(() => {
 // 组件卸载时清理
 const cleanup = () => {
   chartInstance.value?.dispose()
+  areaChartInstance.value?.dispose()
   window.removeEventListener('resize', handleResize)
 }
 
@@ -835,7 +1139,7 @@ const columns = [
     ellipsis: {tooltip: true}
   },
   {
-    title: '操作',
+    title: '',
     key: 'actions',
     width: 150, // 纯图标列宽可更小
     fixed: 'right',
@@ -1170,11 +1474,7 @@ const downloadTemplate = () => {
   message.success('模板下载成功')
 }
 
-// 初始化
-onMounted(() => {
-  console.log('组件挂载，加载数据')
-  loadData()
-})
+
 </script>
 
 <style scoped>
@@ -1283,6 +1583,45 @@ onMounted(() => {
 .chart-container {
   margin-top: 30px;
   padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+/* 上下限设置表单样式 */
+:deep(.limit-settings-form) {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+:deep(.limit-item) {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+:deep(.limit-item h4) {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+  width: 100px;
+  flex-shrink: 0;
+}
+
+:deep(.limit-inputs) {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+:deep(.limit-actions) {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 15px;
   border-top: 1px solid #e9ecef;
 }
 

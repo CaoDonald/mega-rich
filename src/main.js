@@ -1,8 +1,10 @@
-import {createApp} from 'vue'
-import {create} from 'naive-ui' // 新增 NMessageProvider（useMessage 依赖）
+import { createApp } from 'vue'
+import { create } from 'naive-ui' // 新增 NMessageProvider（useMessage 依赖）
 import App from './App.vue'
 // 导入需要全局注册的组件
 import {
+    NCollapse,
+    NCollapseItem,
     NRadioGroup,
     NRadioButton,
     NUpload,
@@ -19,20 +21,22 @@ import {
     NButton,
     NDropdown,
     NForm,
-    NFormItem,NConfigProvider,
+    NFormItem, NConfigProvider,
     NInput, NIcon,
-    NSelect, NDatePicker, NDataTable, NCard, NStatistic, NModal, NInputNumber,NMessageProvider
+    NSelect, NDatePicker, NDataTable, NCard, NStatistic, NModal, NInputNumber, NMessageProvider
 } from 'naive-ui'
 
 // 1. 创建 Naive UI 插件，并配置全局注册的组件
 const naive = create({
     components: [
-            NRadioGroup,
-    NRadioButton,
-            NUpload,
-    NAlert,
+        NCollapseItem,
+        NCollapse,
+        NRadioGroup,
+        NRadioButton,
+        NUpload,
+        NAlert,
         NTabPane,
-    NTabs,
+        NTabs,
         NResult,
         NSpin,
         NMessageProvider,
@@ -44,7 +48,7 @@ const naive = create({
         NButton,
         NDropdown,
         NForm,
-        NFormItem,NConfigProvider,
+        NFormItem, NConfigProvider,
         NInput, NIcon,
         NSelect, NDatePicker, NDataTable, NCard, NStatistic, NModal, NInputNumber
     ]
