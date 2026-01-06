@@ -70,15 +70,6 @@
           />
         </n-form-item>
         
-        <n-form-item label="分类描述">
-          <n-input
-            v-model:value="primaryCategoryForm.description"
-            type="textarea"
-            placeholder="请输入分类描述"
-            :autosize="{ minRows: 3, maxRows: 5 }"
-          />
-        </n-form-item>
-        
         <div class="form-actions">
           <n-button @click="showPrimaryCategoryForm = false">取消</n-button>
           <n-button type="primary" @click="savePrimaryCategory">
@@ -112,15 +103,6 @@
             v-model:value="secondaryCategoryForm.name"
             placeholder="请输入分类名称"
             :maxlength="50"
-          />
-        </n-form-item>
-        
-        <n-form-item label="分类描述">
-          <n-input
-            v-model:value="secondaryCategoryForm.description"
-            type="textarea"
-            placeholder="请输入分类描述"
-            :autosize="{ minRows: 3, maxRows: 5 }"
           />
         </n-form-item>
         
@@ -220,13 +202,6 @@ const primaryCategoryColumns = [
     key: 'name'
   },
   {
-    title: '分类描述',
-    key: 'description',
-    ellipsis: {
-      tooltip: true
-    }
-  },
-  {
     title: '创建时间',
     key: 'created_at',
     render(row) {
@@ -280,13 +255,6 @@ const secondaryCategoryColumns = [
   {
     title: '分类名称',
     key: 'name'
-  },
-  {
-    title: '分类描述',
-    key: 'description',
-    ellipsis: {
-      tooltip: true
-    }
   },
   {
     title: '创建时间',

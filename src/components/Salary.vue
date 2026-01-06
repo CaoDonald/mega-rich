@@ -64,6 +64,7 @@
             :data="filteredRecords"
             :loading="loading"
             :row-key="row => row.id"
+            :pagination="{ pageSize: 10 }"
         />
       </n-card>
     </div>
@@ -516,7 +517,10 @@ const filteredRecords = computed(() => {
   })
   
   // 最终按日期从新到旧排序
-  return calculatedResult.sort((a, b) => new Date(b.record_date) - new Date(a.record_date))
+  const sortedResult = calculatedResult.sort((a, b) => new Date(b.record_date) - new Date(a.record_date))
+  
+  // 分页处理
+  return sortedResult
 })
 
 
