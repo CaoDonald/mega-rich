@@ -57,7 +57,7 @@
       :title="editingPrimaryCategory ? '编辑一级分类' : '添加一级分类'"
       preset="dialog"
       :destroy-on-close="true"
-      :width="auto"
+      width="auto"
       :min-width="400"
       :max-width="600"
     >
@@ -94,7 +94,7 @@
       :title="editingSecondaryCategory ? '编辑二级分类' : '添加二级分类'"
       preset="dialog"
       :destroy-on-close="true"
-      :width="auto"
+      width="auto"
       :min-width="400"
       :max-width="600"
     >
@@ -141,7 +141,7 @@
       negative-text="取消"
       positive-text="删除"
       @positive-click="confirmDelete"
-      :width="auto"
+      width="auto"
       :min-width="300"
       :max-width="400"
     >
@@ -270,9 +270,8 @@ const primaryCategoryColumns = [
 
 const secondaryCategoryColumns = [
   {
-    title: '所属一级分类',
+    title: '一级分类',
     key: 'primary_category',
-    width: 150,
     render(row) {
       const category = props.primaryCategories.find(c => c.id === row.category_id)
       return category?.name || ''
@@ -300,6 +299,7 @@ const secondaryCategoryColumns = [
     title: '操作',
     key: 'actions',
     fixed: 'right',
+    width:100,
     render(row) {
       return h('div', { class: 'actions-cell' }, [
         h(NButton,

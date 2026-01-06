@@ -71,46 +71,11 @@
       <n-card>
         <n-data-table
           :columns="columns"
-          :data="filteredItems"
+          :data="itemsWithGrowthStats"
           :pagination="{ pageSize: 10 }"
           :loading="loading"
            :row-key="row => row.id"
-        >
-          <template #body-cell-actions="{ row }">
-            <div class="actions-cell">
-              <n-button
-                type="primary"
-                size="small"
-                @click="handleViewItem(row)"
-              >
-                <template #icon>
-                  <n-icon><EyeOutline /></n-icon>
-                </template>
-                查看
-              </n-button>
-              <n-button
-                type="info"
-                size="small"
-                @click="handleEditItem(row)"
-              >
-                <template #icon>
-                  <n-icon><CreateOutline /></n-icon>
-                </template>
-                编辑
-              </n-button>
-              <n-button
-                type="error"
-                size="small"
-                @click="handleDeleteItem(row)"
-              >
-                <template #icon>
-                  <n-icon><TrashOutline /></n-icon>
-                </template>
-                删除
-              </n-button>
-            </div>
-          </template>
-        </n-data-table>
+        />
       </n-card>
     </div>
     
@@ -246,7 +211,7 @@
       title="新增资金条目"
       preset="dialog"
       :destroy-on-close="true"
-      :width="auto"
+      width="auto"
       :min-width="400"
       :max-width="600"
     >
@@ -264,7 +229,7 @@
       title="编辑资金条目"
       preset="dialog"
       :destroy-on-close="true"
-      :width="auto"
+      width="auto"
       :min-width="400"
       :max-width="600"
     >
@@ -284,7 +249,7 @@
       title="资金条目详情"
       preset="dialog"
       :destroy-on-close="true"
-      :width="auto"
+      width="auto"
       :min-width="400"
       :max-width="600"
     >
@@ -305,7 +270,7 @@
       negative-text="取消"
       positive-text="删除"
       @positive-click="confirmDelete"
-      :width="auto"
+      width="auto"
       :min-width="300"
       :max-width="400"
     >
@@ -322,9 +287,7 @@
       title="分类管理"
       preset="dialog"
       :destroy-on-close="true"
-      :width="auto"
-      :min-width="600"
-      :max-width="800"
+      width="auto"
     >
       <CategoryManagerModal
         :primary-categories="categories"
@@ -339,7 +302,7 @@
 <script setup>
 import { ref, onMounted, computed, watch, h } from 'vue'
 import { supabase } from '../supabase'
-import { useMessage, NIcon } from 'naive-ui'
+import { useMessage, NIcon, NButton } from 'naive-ui'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart, BarChart } from 'echarts/charts'
@@ -374,7 +337,9 @@ import {
   TrendingUpOutline,
   TrendingDownOutline,
   SettingsOutline,
-  CashOutline
+  CashOutline,
+  CaretUpOutline,
+  CaretDownOutline
 } from '@vicons/ionicons5'
 import AddEditItemForm from './AddEditItemForm.vue'
 import ItemDetail from './ItemDetail.vue'
@@ -968,12 +933,89 @@ const filteredItems = computed(() => {
   return result.sort((a, b) => new Date(b.record_date) - new Date(a.record_date))
 })
 
+// 计算带有增长统计的条目
+const itemsWithGrowthStats = computed(() => {
+  // 获取所有条目，按日期降序排序
+  const allItems = [...items.value].sort((a, b) => new Date(b.record_date) - new Date(a.record_date))
+  
+  // 创建一个映射，按二级分类分组所有条目
+  const itemsBySubcategory = new Map()
+  allItems.forEach(item => {
+    if (!itemsBySubcategory.has(item.subcategory_id)) {
+      itemsBySubcategory.set(item.subcategory_id, [])
+    }
+    itemsBySubcategory.get(item.subcategory_id).push(item)
+  })
+  
+  // 创建一个映射，存储每个二级分类下每个月份的最新记录（用于同比计算）
+  const monthlyLatestBySubcategory = new Map()
+  allItems.forEach(item => {
+    const recordDate = new Date(item.record_date)
+    const year = recordDate.getFullYear()
+    const month = recordDate.getMonth()
+    const subcategoryKey = item.subcategory_id
+    const monthKey = `${year}-${month}`
+    
+    if (!monthlyLatestBySubcategory.has(subcategoryKey)) {
+      monthlyLatestBySubcategory.set(subcategoryKey, new Map())
+    }
+    
+    const subcategoryMonthlyMap = monthlyLatestBySubcategory.get(subcategoryKey)
+    if (!subcategoryMonthlyMap.has(monthKey)) {
+      subcategoryMonthlyMap.set(monthKey, item)
+    }
+  })
+  
+  return filteredItems.value.map(item => {
+    const recordDate = new Date(item.record_date)
+    const year = recordDate.getFullYear()
+    const month = recordDate.getMonth()
+    const subcategoryId = item.subcategory_id
+    
+    // 获取同一二级分类下的所有条目
+    const sameSubcategoryItems = itemsBySubcategory.get(subcategoryId) || []
+    
+    // 查找当前条目的上一条记录（同一二级分类，按日期排序）
+    const currentIndex = sameSubcategoryItems.findIndex(i => i.id === item.id)
+    const previousItem = currentIndex < sameSubcategoryItems.length - 1 ? sameSubcategoryItems[currentIndex + 1] : null
+    
+    // 计算增长和环比（与上一条记录比较）
+    let growth = 0
+    let growthRate = 0
+    
+    if (previousItem) {
+      growth = item.amount - previousItem.amount
+      growthRate = previousItem.amount === 0 ? 0 : ((growth / previousItem.amount) * 100).toFixed(2)
+    }
+    
+    // 计算同比（与去年同月最新记录比较）
+    let yoyGrowth = 0
+    let yoyGrowthRate = 0
+    
+    const sameMonthLastYearKey = `${year - 1}-${month}`
+    const subcategoryMonthlyMap = monthlyLatestBySubcategory.get(subcategoryId)
+    const sameMonthLastYearItem = subcategoryMonthlyMap?.get(sameMonthLastYearKey)
+    
+    if (sameMonthLastYearItem) {
+      yoyGrowth = item.amount - sameMonthLastYearItem.amount
+      yoyGrowthRate = sameMonthLastYearItem.amount === 0 ? 0 : ((yoyGrowth / sameMonthLastYearItem.amount) * 100).toFixed(2)
+    }
+    
+    return {
+      ...item,
+      growth: parseFloat(growth.toFixed(2)),
+      growthRate: parseFloat(growthRate),
+      yoyGrowth: parseFloat(yoyGrowth.toFixed(2)),
+      yoyGrowthRate: parseFloat(yoyGrowthRate)
+    }
+  })
+})
+
 // 表格列配置
 const columns = [
   {
     title: '一级分类',
     key: 'category',
-    width: 120,
     render(row) {
       const subcategory = subcategories.value.find(s => s.id === row.subcategory_id)
       if (!subcategory) return ''
@@ -984,7 +1026,6 @@ const columns = [
   {
     title: '二级分类',
     key: 'subcategory',
-    width: 120,
     render(row) {
       const subcategory = subcategories.value.find(s => s.id === row.subcategory_id)
       return subcategory?.name || ''
@@ -993,7 +1034,6 @@ const columns = [
   {
     title: '金额',
     key: 'amount',
-    width: 140,
     render(row) {
       const isPositive = row.amount >= 0
       return h('div', {
@@ -1014,16 +1054,90 @@ const columns = [
   {
     title: '记录日期',
     key: 'record_date',
-    width: 150,
     render(row) {
       return new Date(row.record_date).toLocaleDateString()
     }
   },
   {
-    title: '操作',
+    title: '增长',
+    key: 'growth',
+    render(row) {
+      const value = parseFloat(row.growth || 0)
+      const isNegative = value < 0
+      const displayValue = Math.abs(value).toFixed(2)
+      const icon = isNegative ? 
+        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
+        h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
+      return h('div', { 
+        class: 'growth-item',
+        style: { color: isNegative ? '#18a058' : '#f53f3f' }
+      }, [icon, ` ${displayValue}元`])
+    }
+  },
+  {
+    title: '环比',
+    key: 'growthRate',
+    render(row) {
+      const value = parseFloat(row.growthRate || 0)
+      const isNegative = value < 0
+      const displayValue = Math.abs(value).toFixed(2)
+      const icon = isNegative ? 
+        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
+        h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
+      return h('div', { 
+        class: 'growth-item',
+        style: { color: isNegative ? '#18a058' : '#f53f3f' }
+      }, [icon, ` ${displayValue}%`])
+    }
+  },
+  {
+    title: '同比',
+    key: 'yoyGrowthRate',
+    render(row) {
+      const value = parseFloat(row.yoyGrowthRate || 0)
+      const isNegative = value < 0
+      const displayValue = Math.abs(value).toFixed(2)
+      const icon = isNegative ? 
+        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
+        h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
+      return h('div', { 
+        class: 'growth-item',
+        style: { color: isNegative ? '#18a058' : '#f53f3f' }
+      }, [icon, ` ${displayValue}%`])
+    }
+  },
+  {
+    title: '',
     key: 'actions',
-    width: 200,
-    fixed: 'right'
+    fixed: 'right',
+    render(row) {
+      return h('div', { class: 'actions-cell' }, [
+        // 查看图标按钮
+        h('div', {
+          class: 'icon-btn icon-btn-primary',
+          onClick: () => handleViewItem(row),
+          title: '查看记录'
+        }, [
+          h(NIcon, { size: 18 }, { default: () => h(EyeOutline) })
+        ]),
+        // 编辑图标按钮
+        h('div', {
+          class: 'icon-btn icon-btn-info',
+          onClick: () => handleEditItem(row),
+          title: '编辑记录'
+        }, [
+          h(NIcon, { size: 18 }, { default: () => h(CreateOutline) })
+        ]),
+        // 删除图标按钮
+        h('div', {
+          class: 'icon-btn icon-btn-error',
+          onClick: () => handleDeleteItem(row),
+          title: '删除记录'
+        }, [
+          h(NIcon, { size: 18 }, { default: () => h(TrashOutline) })
+        ])
+      ])
+    }
   }
 ]
 
@@ -1507,6 +1621,65 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   justify-content: center;
+}
+
+/* 操作列容器 */
+:deep(.actions-cell) {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px !important; /* 图标按钮间距 */
+  width: 100% !important;
+  padding: 4px 0;
+}
+
+/* 通用图标按钮样式 */
+:deep(.icon-btn) {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%; /* 圆形 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+}
+
+/* 主色调（查看） */
+:deep(.icon-btn-primary) {
+  color:#18a058;
+}
+:deep(.icon-btn-primary:hover) {
+  background-color: #14874b;
+  box-shadow: 0 2px 8px rgba(24, 160, 88, 0.3);
+  transform: scale(1.05);
+}
+
+/* 信息色（编辑） */
+:deep(.icon-btn-info) {
+  color: #2080f0;
+}
+:deep(.icon-btn-info:hover) {
+  background-color: #1870e0;
+  box-shadow: 0 2px 8px rgba(32, 128, 240, 0.3);
+  transform: scale(1.05);
+}
+
+/* 错误色（删除） */
+:deep(.icon-btn-error) {
+  color: #f53f3f;
+}
+:deep(.icon-btn-error:hover) {
+  background-color: #e03535;
+  box-shadow: 0 2px 8px rgba(245, 63, 63, 0.3);
+  transform: scale(1.05);
+}
+
+/* 点击反馈 */
+:deep(.icon-btn:active) {
+  transform: scale(0.95);
 }
 
 .form-container {
