@@ -52,18 +52,6 @@
         placeholder="选择月份"
         class="filter-select"
       />
-      <n-select
-        v-model:value="selectedTimeRange"
-        placeholder="选择时间范围"
-        :options="timeRangeOptions"
-        class="filter-select"
-      />
-      <n-button @click="applyFilters">
-        <template #icon>
-          <n-icon><SearchOutline /></n-icon>
-        </template>
-        筛选
-      </n-button>
       <n-button @click="resetFilters">
         <template #icon>
           <n-icon><RefreshOutline /></n-icon>
@@ -191,46 +179,7 @@
         />
       </n-card>
     </div>
-
-    <!-- 图表配置区 -->
-    <div class="charts-config-section">
-      <div class="charts-config-actions">
-        <n-button @click="showCustomLimitsForm = !showCustomLimitsForm">
-          <template #icon>
-            <n-icon><SettingsOutline /></n-icon>
-          </template>
-          {{ showCustomLimitsForm ? '关闭' : '自定义图表上下限' }}
-        </n-button>
-      </div>
-      
-      <!-- 自定义图表上下限表单 -->
-      <n-card v-if="showCustomLimitsForm" class="custom-limits-form">
-        <h4>自定义图表上下限</h4>
-        <div class="form-row">
-          <n-input-number
-            v-model:value="customChartMin"
-            placeholder="最小值"
-            style="margin-right: 20px; width: 200px;"
-            step="100"
-          />
-          <n-input-number
-            v-model:value="customChartMax"
-            placeholder="最大值"
-            style="width: 200px;"
-            step="100"
-          />
-          <div class="form-actions">
-            <n-button @click="applyCustomLimits" type="primary" style="margin-right: 10px;">
-              应用
-            </n-button>
-            <n-button @click="resetCustomLimits">
-              重置
-            </n-button>
-          </div>
-        </div>
-      </n-card>
-    </div>
-
+    
     <!-- 折线图 -->
     <div class="chart-section">
       <n-card>
@@ -513,7 +462,7 @@ const importing = ref(false)
 const importResult = ref(null)
 
 // 图表状态
-const chartHeight = ref('400px')
+const chartHeight = ref('450px')
 const customChartMin = ref(null)
 const customChartMax = ref(null)
 const showCustomLimitsForm = ref(false)
@@ -523,10 +472,34 @@ const timeFilteredMonthlyStats = computed(() => {
   // 先根据时间范围筛选原始条目
   const filtered = filterByTimeRange(items.value, selectedTimeRange.value)
   
-  // 然后重新按月份分组
+  // 按月份和二级分类分组，每个分组只保留最新的一条记录
+  const monthlySubcategoryData = new Map()
+  
+  // 遍历所有条目，按月份和二级分类分组
+  filtered.forEach(item => {
+    const recordDate = new Date(item.record_date)
+    const year = recordDate.getFullYear()
+    const month = recordDate.getMonth()
+    const subcategoryId = item.subcategory_id
+    const key = `${year}-${month}-${subcategoryId}`
+    
+    // 检查是否已有该月份该二级分类的数据
+    if (!monthlySubcategoryData.has(key)) {
+      monthlySubcategoryData.set(key, item)
+    } else {
+      // 如果已有数据，比较日期，只保留最新的
+      const existingItem = monthlySubcategoryData.get(key)
+      const existingDate = new Date(existingItem.record_date)
+      if (recordDate > existingDate) {
+        monthlySubcategoryData.set(key, item)
+      }
+    }
+  })
+  
+  // 将筛选后的条目重新按月份分组
   const monthlyData = new Map()
   
-  filtered.forEach(item => {
+  Array.from(monthlySubcategoryData.values()).forEach(item => {
     const recordDate = new Date(item.record_date)
     const year = recordDate.getFullYear()
     const month = recordDate.getMonth()
@@ -559,29 +532,100 @@ const timeFilteredMonthlyStats = computed(() => {
 const lineChartOption = computed(() => {
   const stats = timeFilteredMonthlyStats.value
   const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
-  const amountData = stats.map(stat => stat.amount)
   
-  // 计算环比和同比数据
-  const growthRateData = stats.map((stat, index) => {
-    if (index === 0) return 0
-    const previousStat = stats[index - 1]
-    const growth = stat.amount - previousStat.amount
-    return previousStat.amount === 0 ? 0 : parseFloat(((growth / Math.abs(previousStat.amount)) * 100).toFixed(2))
+  // 按二级分类分组，计算每个分类在每个月的金额
+  const subcategoryAmounts = new Map()
+  
+  // 遍历所有月度数据
+  stats.forEach(stat => {
+    const monthKey = stat.key
+    
+    // 遍历当月所有条目
+    stat.items.forEach(item => {
+      const subcategoryId = item.subcategory_id
+      
+      // 查找二级分类
+      const subcategory = subcategories.value.find(s => s.id === subcategoryId)
+      if (!subcategory) return
+      
+      // 检查是否需要根据一级分类过滤
+      if (selectedCategory.value) {
+        // 查找二级分类所属的一级分类
+        const category = categories.value.find(c => c.id === subcategory.category_id)
+        if (!category || category.id !== selectedCategory.value) {
+          return // 不符合选中的一级分类，跳过
+        }
+      }
+      
+      // 检查是否需要根据二级分类过滤
+      if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
+        return // 不符合选中的二级分类，跳过
+      }
+      
+      const subcategoryName = subcategory.name
+      
+      // 初始化二级分类数据
+      if (!subcategoryAmounts.has(subcategoryName)) {
+        subcategoryAmounts.set(subcategoryName, new Map())
+      }
+      
+      const subcategoryMap = subcategoryAmounts.get(subcategoryName)
+      // 累加当月金额
+      const currentAmount = subcategoryMap.get(monthKey) || 0
+      subcategoryMap.set(monthKey, currentAmount + item.amount)
+    })
   })
   
-  const yoyGrowthRateData = stats.map((stat, index) => {
-    const [currentYear, currentMonth] = stat.key.split('-').map(Number)
-    const sameMonthLastYearKey = `${currentYear - 1}-${currentMonth}`
-    const sameMonthLastYearStat = stats.find(s => s.key === sameMonthLastYearKey)
-    if (!sameMonthLastYearStat) return 0
-    const growth = stat.amount - sameMonthLastYearStat.amount
-    return sameMonthLastYearStat.amount === 0 ? 0 : parseFloat(((growth / Math.abs(sameMonthLastYearStat.amount)) * 100).toFixed(2))
+  // 准备系列数据
+  const series = []
+  const legendData = []
+  
+  // 定义颜色数组，用于不同的二级分类
+  const colors = ['#18a058', '#f53f3f', '#3b82f6', '#e2c044', '#8c52ff', '#ff7875', '#5cdbd3', '#ffa940', '#95de64', '#f7b801', '#722ed1', '#13c2c2', '#eb2f96', '#fa8c16', '#a0d911']
+  let colorIndex = 0
+  
+  // 为每个二级分类创建系列
+  subcategoryAmounts.forEach((amountMap, subcategoryName) => {
+    // 准备该分类在所有月份的数据
+    const data = stats.map(stat => {
+      return amountMap.get(stat.key) || 0
+    })
+    
+    series.push({
+      name: subcategoryName,
+      type: 'line',
+      data: data,
+      smooth: true,
+      emphasis: {
+        focus: 'series'
+      },
+      itemStyle: {
+        color: colors[colorIndex % colors.length]
+      },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [
+            { offset: 0, color: `${colors[colorIndex % colors.length]}4d` }, // 4d 是透明度
+            { offset: 1, color: `${colors[colorIndex % colors.length]}0d` } // 0d 是透明度
+          ]
+        }
+      }
+    })
+    
+    legendData.push(subcategoryName)
+    colorIndex++
   })
   
   return {
     title: {
       text: '资金变化趋势',
-      left: 'center'
+      left: 'center',
+      top: 10
     },
     tooltip: {
       trigger: 'axis',
@@ -594,13 +638,17 @@ const lineChartOption = computed(() => {
       triggerOn: 'mousemove'
     },
     legend: {
-      data: ['金额', '环比', '同比'],
-      top: 30
+      data: legendData,
+      top: 40,
+      left: 'center',
+      type: 'scroll',
+      orient: 'horizontal'
     },
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
+      left: '5%',
+      right: '5%',
+      bottom: '5%',
+      top: '20%',
       containLabel: true
     },
     xAxis: [
@@ -616,77 +664,78 @@ const lineChartOption = computed(() => {
         name: '金额(元)',
         min: customChartMin.value !== null ? customChartMin.value : 'dataMin',
         max: customChartMax.value !== null ? customChartMax.value : 'dataMax'
-      },
-      {
-        type: 'value',
-        name: '增长率(%)',
-        axisLabel: {
-          formatter: '{value}%'
-        }
       }
     ],
-    series: [
-      {
-        name: '金额',
-        type: 'line',
-        data: amountData,
-        smooth: true,
-        emphasis: {
-          focus: 'series'
-        },
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(24, 160, 88, 0.3)' },
-              { offset: 1, color: 'rgba(24, 160, 88, 0.05)' }
-            ]
-          }
-        }
-      },
-      {
-        name: '环比',
-        type: 'line',
-        yAxisIndex: 1,
-        data: growthRateData,
-        smooth: true,
-        emphasis: {
-          focus: 'series'
-        },
-        itemStyle: {
-          color: '#f53f3f'
-        }
-      },
-      {
-        name: '同比',
-        type: 'line',
-        yAxisIndex: 1,
-        data: yoyGrowthRateData,
-        smooth: true,
-        emphasis: {
-          focus: 'series'
-        },
-        itemStyle: {
-          color: '#3b82f6'
-        }
-      }
-    ]
+    series: series
   }
 })
 
 // 面积图数据
 const areaChartOption = computed(() => {
-  const stats = timeFilteredMonthlyStats.value
+  // 获取原始月度数据
+  const originalStats = timeFilteredMonthlyStats.value
+  
+  // 筛选符合条件的月度数据
+  const filteredStats = originalStats.filter(stat => {
+    // 检查该月度数据中是否有符合条件的条目
+    return stat.items.some(item => {
+      const subcategoryId = item.subcategory_id
+      
+      // 查找二级分类
+      const subcategory = subcategories.value.find(s => s.id === subcategoryId)
+      if (!subcategory) return false
+      
+      // 检查是否需要根据一级分类过滤
+      if (selectedCategory.value) {
+        // 查找二级分类所属的一级分类
+        const category = categories.value.find(c => c.id === subcategory.category_id)
+        if (!category || category.id !== selectedCategory.value) {
+          return false // 不符合选中的一级分类
+        }
+      }
+      
+      // 检查是否需要根据二级分类过滤
+      if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
+        return false // 不符合选中的二级分类
+      }
+      
+      return true
+    })
+  })
+  
+  // 使用过滤后的数据，如果过滤后为空则使用原始数据
+  const stats = filteredStats.length > 0 ? filteredStats : originalStats
   const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
   
   // 计算累计金额
   let cumulativeTotal = 0
   const cumulativeData = stats.map(stat => {
-    cumulativeTotal += stat.amount
+    // 计算当前月符合条件的金额总和
+    const monthAmount = stat.items.reduce((sum, item) => {
+      const subcategoryId = item.subcategory_id
+      
+      // 查找二级分类
+      const subcategory = subcategories.value.find(s => s.id === subcategoryId)
+      if (!subcategory) return sum
+      
+      // 检查是否需要根据一级分类过滤
+      if (selectedCategory.value) {
+        // 查找二级分类所属的一级分类
+        const category = categories.value.find(c => c.id === subcategory.category_id)
+        if (!category || category.id !== selectedCategory.value) {
+          return sum // 不符合选中的一级分类，跳过
+        }
+      }
+      
+      // 检查是否需要根据二级分类过滤
+      if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
+        return sum // 不符合选中的二级分类，跳过
+      }
+      
+      return sum + item.amount
+    }, 0)
+    
+    cumulativeTotal += monthAmount
     return cumulativeTotal
   })
   
@@ -694,18 +743,44 @@ const areaChartOption = computed(() => {
   let currentYear = null
   let annualCumulative = 0
   const annualCumulativeData = stats.map(stat => {
+    // 计算当前月符合条件的金额总和
+    const monthAmount = stat.items.reduce((sum, item) => {
+      const subcategoryId = item.subcategory_id
+      
+      // 查找二级分类
+      const subcategory = subcategories.value.find(s => s.id === subcategoryId)
+      if (!subcategory) return sum
+      
+      // 检查是否需要根据一级分类过滤
+      if (selectedCategory.value) {
+        // 查找二级分类所属的一级分类
+        const category = categories.value.find(c => c.id === subcategory.category_id)
+        if (!category || category.id !== selectedCategory.value) {
+          return sum // 不符合选中的一级分类，跳过
+        }
+      }
+      
+      // 检查是否需要根据二级分类过滤
+      if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
+        return sum // 不符合选中的二级分类，跳过
+      }
+      
+      return sum + item.amount
+    }, 0)
+    
     if (currentYear !== stat.year) {
       currentYear = stat.year
       annualCumulative = 0
     }
-    annualCumulative += stat.amount
+    annualCumulative += monthAmount
     return annualCumulative
   })
   
   return {
     title: {
       text: '累计金额变化',
-      left: 'center'
+      left: 'center',
+      top: 10
     },
     tooltip: {
       trigger: 'axis',
@@ -719,12 +794,16 @@ const areaChartOption = computed(() => {
     },
     legend: {
       data: ['累计总金额', '年度累计金额'],
-      top: 30
+      top: 40,
+      left: 'center',
+      type: 'scroll',
+      orient: 'horizontal'
     },
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
+      left: '5%',
+      right: '5%',
+      bottom: '5%',
+      top: '20%',
       containLabel: true
     },
     xAxis: {
@@ -792,6 +871,26 @@ const annualSummary = computed(() => {
   const annualData = new Map()
   
   items.value.forEach(item => {
+    const subcategoryId = item.subcategory_id
+    
+    // 查找二级分类
+    const subcategory = subcategories.value.find(s => s.id === subcategoryId)
+    if (!subcategory) return
+    
+    // 检查是否需要根据一级分类过滤
+    if (selectedCategory.value) {
+      // 查找二级分类所属的一级分类
+      const category = categories.value.find(c => c.id === subcategory.category_id)
+      if (!category || category.id !== selectedCategory.value) {
+        return // 不符合选中的一级分类，跳过
+      }
+    }
+    
+    // 检查是否需要根据二级分类过滤
+    if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
+      return // 不符合选中的二级分类，跳过
+    }
+    
     const recordDate = new Date(item.record_date)
     const year = recordDate.getFullYear()
     
@@ -817,7 +916,8 @@ const annualBarChartOption = computed(() => {
   return {
     title: {
       text: '年度资金汇总',
-      left: 'center'
+      left: 'center',
+      top: 10
     },
     tooltip: {
       trigger: 'axis',
@@ -831,12 +931,16 @@ const annualBarChartOption = computed(() => {
     },
     legend: {
       data: ['金额', '趋势'],
-      top: 30
+      top: 40,
+      left: 'center',
+      type: 'scroll',
+      orient: 'horizontal'
     },
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
+      left: '5%',
+      right: '5%',
+      bottom: '5%',
+      top: '20%',
       containLabel: true
     },
     xAxis: {
