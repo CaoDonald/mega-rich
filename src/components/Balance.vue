@@ -91,47 +91,86 @@
         <h3>统计信息</h3>
         <div class="stats-grid">
           <div class="stat-item">
-            <n-statistic label="总金额" :value="totalAmount" suffix="元" />
+            <n-statistic label="广义金额" :value="latestMonthStats.broadAmount" suffix="元" />
           </div>
           <div class="stat-item">
-            <n-statistic label="本月金额" :value="latestMonthStats.currentAmount.toFixed(2)" suffix="元" />
+            <n-statistic label="可支配金额" :value="latestMonthStats.disposableAmount" suffix="元" />
           </div>
           <div class="stat-item">
             <n-statistic 
-              label="增长金额" 
-              :value="latestMonthStats.growth" 
+              label="广义金额增长" 
+              :value="latestMonthStats.broadGrowth" 
               suffix="元"
-              :value-style="{ color: latestMonthStats.growth >= 0 ? '#f53f3f' : '#18a058' }"
+              :value-style="{ color: latestMonthStats.broadGrowth >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
-                <n-icon v-if="latestMonthStats.growth > 0"><TrendingUpOutline /></n-icon>
-                <n-icon v-else-if="latestMonthStats.growth < 0"><TrendingDownOutline /></n-icon>
+                <n-icon v-if="latestMonthStats.broadGrowth > 0"><TrendingUpOutline /></n-icon>
+                <n-icon v-else-if="latestMonthStats.broadGrowth < 0"><TrendingDownOutline /></n-icon>
               </template>
             </n-statistic>
           </div>
           <div class="stat-item">
             <n-statistic 
-              label="环比" 
-              :value="latestMonthStats.growthRate" 
+              label="广义金额环比" 
+              :value="latestMonthStats.broadGrowthRate" 
               suffix="%"
-              :value-style="{ color: latestMonthStats.growthRate >= 0 ? '#f53f3f' : '#18a058' }"
+              :value-style="{ color: latestMonthStats.broadGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
-                <n-icon v-if="latestMonthStats.growthRate > 0"><TrendingUpOutline /></n-icon>
-                <n-icon v-else-if="latestMonthStats.growthRate < 0"><TrendingDownOutline /></n-icon>
+                <n-icon v-if="latestMonthStats.broadGrowthRate > 0"><TrendingUpOutline /></n-icon>
+                <n-icon v-else-if="latestMonthStats.broadGrowthRate < 0"><TrendingDownOutline /></n-icon>
               </template>
             </n-statistic>
           </div>
           <div class="stat-item">
             <n-statistic 
-              label="同比" 
-              :value="latestMonthStats.yoyGrowthRate" 
+              label="广义金额同比" 
+              :value="latestMonthStats.broadYoyGrowthRate" 
               suffix="%"
-              :value-style="{ color: latestMonthStats.yoyGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
+              :value-style="{ color: latestMonthStats.broadYoyGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
-                <n-icon v-if="latestMonthStats.yoyGrowthRate > 0"><TrendingUpOutline /></n-icon>
-                <n-icon v-else-if="latestMonthStats.yoyGrowthRate < 0"><TrendingDownOutline /></n-icon>
+                <n-icon v-if="latestMonthStats.broadYoyGrowthRate > 0"><TrendingUpOutline /></n-icon>
+                <n-icon v-else-if="latestMonthStats.broadYoyGrowthRate < 0"><TrendingDownOutline /></n-icon>
+              </template>
+            </n-statistic>
+          </div>
+          <div class="stat-item">
+            <n-statistic 
+              label="可支配金额增长" 
+              :value="latestMonthStats.disposableGrowth" 
+              suffix="元"
+              :value-style="{ color: latestMonthStats.disposableGrowth >= 0 ? '#f53f3f' : '#18a058' }"
+            >
+              <template #prefix>
+                <n-icon v-if="latestMonthStats.disposableGrowth > 0"><TrendingUpOutline /></n-icon>
+                <n-icon v-else-if="latestMonthStats.disposableGrowth < 0"><TrendingDownOutline /></n-icon>
+              </template>
+            </n-statistic>
+          </div>
+          <div class="stat-item">
+            <n-statistic 
+              label="可支配金额环比" 
+              :value="latestMonthStats.disposableGrowthRate" 
+              suffix="%"
+              :value-style="{ color: latestMonthStats.disposableGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
+            >
+              <template #prefix>
+                <n-icon v-if="latestMonthStats.disposableGrowthRate > 0"><TrendingUpOutline /></n-icon>
+                <n-icon v-else-if="latestMonthStats.disposableGrowthRate < 0"><TrendingDownOutline /></n-icon>
+              </template>
+            </n-statistic>
+          </div>
+          <div class="stat-item">
+            <n-statistic 
+              label="可支配金额同比" 
+              :value="latestMonthStats.disposableYoyGrowthRate" 
+              suffix="%"
+              :value-style="{ color: latestMonthStats.disposableYoyGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
+            >
+              <template #prefix>
+                <n-icon v-if="latestMonthStats.disposableYoyGrowthRate > 0"><TrendingUpOutline /></n-icon>
+                <n-icon v-else-if="latestMonthStats.disposableYoyGrowthRate < 0"><TrendingDownOutline /></n-icon>
               </template>
             </n-statistic>
           </div>
@@ -879,7 +918,7 @@ const subcategoryOptions = computed(() => {
 const monthlyStats = computed(() => {
   const monthlyData = new Map()
   
-  items.value.forEach(item => {
+  filteredItems.value.forEach(item => {
     const recordDate = new Date(item.record_date)
     const year = recordDate.getFullYear()
     const month = recordDate.getMonth()
@@ -943,24 +982,97 @@ const totalAmount = computed(() => {
   return filteredItems.value.reduce((sum, item) => sum + item.amount, 0).toFixed(2)
 })
 
+// 计算广义金额和可支配金额
+const calculateBroadAndDisposableAmount = (items) => {
+  // 广义金额：所有金额之和
+  const broadAmount = items.reduce((sum, item) => sum + item.amount, 0)
+  
+  // 计算可支配金额：广义金额减去一级分类为房贷和二级分类为蜻蜓点金的金额
+  const nonDisposableAmount = items.reduce((sum, item) => {
+    // 查找二级分类
+    const subcategory = subcategories.value.find(s => s.id === item.subcategory_id)
+    if (!subcategory) return sum
+    
+    // 查找一级分类
+    const category = categories.value.find(c => c.id === subcategory.category_id)
+    if (!category) return sum
+    
+    // 检查是否为房贷一级分类或蜻蜓点金二级分类
+    if (category.name === '房贷' || subcategory.name === '蜻蜓点金') {
+      return sum + item.amount
+    }
+    
+    return sum
+  }, 0)
+  
+  const disposableAmount = broadAmount - nonDisposableAmount
+  
+  return {
+    broadAmount: parseFloat(broadAmount.toFixed(2)),
+    disposableAmount: parseFloat(disposableAmount.toFixed(2))
+  }
+}
+
 const latestMonthStats = computed(() => {
   if (monthlyStats.value.length === 0) {
     return {
       currentAmount: 0,
+      broadAmount: 0,
+      disposableAmount: 0,
       growth: 0,
       growthRate: 0,
       yoyGrowth: 0,
-      yoyGrowthRate: 0
+      yoyGrowthRate: 0,
+      broadGrowth: 0,
+      broadGrowthRate: 0,
+      broadYoyGrowth: 0,
+      broadYoyGrowthRate: 0,
+      disposableGrowth: 0,
+      disposableGrowthRate: 0,
+      disposableYoyGrowth: 0,
+      disposableYoyGrowthRate: 0
     }
   }
   
-  // 获取最新月份数据
+  // 获取最新月份数据（如果选择了月份，则为选择的月份）
   const latestStat = monthlyStats.value[monthlyStats.value.length - 1]
   const currentAmount = latestStat.amount
   
+  // 计算广义金额和可支配金额
+  const { broadAmount, disposableAmount } = calculateBroadAndDisposableAmount(latestStat.items)
+  
+  // 计算金额的增长统计
+  const amountGrowthStats = calculateGrowthStats(currentAmount, latestStat.key, monthlyStats.value)
+  
+  // 计算广义金额的增长统计
+  const broadGrowthStats = calculateGrowthStats(broadAmount, latestStat.key, 
+    monthlyStats.value.map(stat => ({
+      ...stat,
+      amount: calculateBroadAndDisposableAmount(stat.items).broadAmount
+    }))
+  )
+  
+  // 计算可支配金额的增长统计
+  const disposableGrowthStats = calculateGrowthStats(disposableAmount, latestStat.key, 
+    monthlyStats.value.map(stat => ({
+      ...stat,
+      amount: calculateBroadAndDisposableAmount(stat.items).disposableAmount
+    }))
+  )
+  
   return {
     currentAmount,
-    ...calculateGrowthStats(currentAmount, latestStat.key, monthlyStats.value)
+    broadAmount,
+    disposableAmount,
+    ...amountGrowthStats,
+    broadGrowth: broadGrowthStats.growth,
+    broadGrowthRate: broadGrowthStats.growthRate,
+    broadYoyGrowth: broadGrowthStats.yoyGrowth,
+    broadYoyGrowthRate: broadGrowthStats.yoyGrowthRate,
+    disposableGrowth: disposableGrowthStats.growth,
+    disposableGrowthRate: disposableGrowthStats.growthRate,
+    disposableYoyGrowth: disposableGrowthStats.yoyGrowth,
+    disposableYoyGrowthRate: disposableGrowthStats.yoyGrowthRate
   }
 })
 
