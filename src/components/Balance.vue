@@ -62,7 +62,7 @@
     
     <!-- 资金条目列表 -->
     <div class="items-list">
-      <n-card>
+      <n-card size="small">
         <n-data-table
           :columns="columns"
           :data="itemsWithGrowthStats"
@@ -75,7 +75,7 @@
     
     <!-- 统计信息 -->
     <div class="statistics-section">
-      <n-card>
+      <n-card size="small">
         <h3>统计信息</h3>
         <div class="stats-grid">
           <div class="stat-item">
@@ -168,7 +168,7 @@
     
     <!-- 广义金额和可支配金额表格 -->
     <div class="amounts-table-section">
-      <n-card>
+      <n-card size="small">
         <h3>广义金额与可支配金额统计</h3>
         <n-data-table
           :columns="statsColumns"
@@ -182,7 +182,7 @@
     
     <!-- 折线图 -->
     <div class="chart-section">
-      <n-card>
+      <n-card size="small">
         <v-chart
           :option="lineChartOption"
           :style="{ height: chartHeight, width: '100%' }"
@@ -193,7 +193,7 @@
     
     <!-- 一级分类资金变化趋势 -->
     <div class="chart-section">
-      <n-card>
+      <n-card size="small">
         <v-chart
           :option="lineChartCategoryOption"
           :style="{ height: chartHeight, width: '100%' }"
@@ -204,7 +204,7 @@
     
     <!-- 面积图 -->
     <div class="chart-section">
-      <n-card>
+      <n-card size="small">
         <v-chart
           :option="areaChartOption"
           :style="{ height: chartHeight, width: '100%' }"
@@ -215,7 +215,7 @@
 
     <!-- 年度汇总柱状图 -->
     <div class="chart-section">
-      <n-card>
+      <n-card size="small">
         <v-chart
           :option="annualBarChartOption"
           :style="{ height: chartHeight, width: '100%' }"
@@ -482,10 +482,29 @@ const importing = ref(false)
 const importResult = ref(null)
 
 // 图表状态
-const chartHeight = ref('450px')
+const chartHeight = ref('350px')
 const customChartMin = ref(null)
 const customChartMax = ref(null)
 const showCustomLimitsForm = ref(false)
+
+// 根据屏幕宽度动态调整图表高度
+const updateChartHeight = () => {
+  if (window.innerWidth < 768) {
+    chartHeight.value = '300px'
+  }
+  if (window.innerWidth < 480) {
+    chartHeight.value = '250px'
+  }
+  if (window.innerWidth < 360) {
+    chartHeight.value = '220px'
+  }
+}
+
+// 监听窗口大小变化，动态调整图表高度
+window.addEventListener('resize', updateChartHeight)
+
+// 初始化图表高度
+updateChartHeight()
 
 // 图表公共配置
 const commonChartConfig = {
@@ -495,45 +514,88 @@ const commonChartConfig = {
       type: 'cross',
       label: {
         backgroundColor: '#6a7985',
-        fontSize: '12px'
-      }
+        fontSize: '11px',
+        padding: [5, 8],
+        // 给坐标轴指示器标签也提升层级
+        zlevel: 200,
+        // 确保标签不被裁剪
+        overflow: 'none'
+      },
+      // 提升坐标轴指示器本身的层级
+      zlevel: 200
     },
-    triggerOn: 'mousemove',
-    formatter: function(params) {
-      let result = params[0].axisValue + '<br/>';
-      params.forEach(param => {
-        result += `${param.marker}${param.seriesName}: ${param.value}元<br/>`;
-      });
-      return result;
+    triggerOn: 'click',
+    padding: 10,
+    // 进一步提高 zlevel 数值（避开其他元素的层级冲突）
+    zlevel: 200,
+    confine: false,
+    // 关键：强制 tooltip 渲染到 body 下（脱离图表容器的层级限制）
+    appendToBody: true,
+    // 可选：增加 tooltip 内边距，避免内容边缘被遮挡
+    textStyle: {
+      fontSize: '11px',
+      zlevel: 200
     }
   },
   legend: {
-    top: 40,
+    top: 30,
     left: 'center',
     type: 'scroll',
     orient: 'horizontal',
     textStyle: {
-      fontSize: '12px'
+      fontSize: '8px'
     },
-    itemWidth: 12,
-    itemHeight: 12,
-    pageIconSize: 10,
+    itemWidth: 8,
+    itemHeight: 8,
+    pageIconSize: 8,
     pageTextStyle: {
-      fontSize: '10px'
-    }
+      fontSize: '9px'
+    },
+    pageButtonGap: 5,
+    // 降低图例层级，避免遮挡 tooltip
+    zlevel: 10
   },
   grid: {
-    left: '5%',
-    right: '5%',
-    bottom: '8%',
-    top: '25%',
-    containLabel: true
+    left: '8%',
+    right: '8%',
+    bottom: '10%',
+    top: '30%',
+    containLabel: true,
+    // 降低网格层级
+    zlevel: 10
   },
   dataZoom: {
     type: 'inside',
     start: 0,
-    end: 100
-  }
+    end: 100,
+    // 降低数据缩放组件层级
+    zlevel: 10
+  },
+  xAxis: {
+    axisLabel: {
+      fontSize: '10px',
+      margin: 8
+    },
+    axisTick: {
+      show: false,
+      zlevel: 10
+    },
+    zlevel: 10
+  },
+  yAxis: {
+    axisLabel: {
+      fontSize: '8px',
+      margin: 4,
+      show: false
+    },
+    axisTick: {
+      show: false,
+      zlevel: 10
+    },
+    zlevel: 10
+  },
+  // 全局层级控制：确保 tooltip 所在画布层级最高
+  zlevel: 1
 }
 
 // 按时间范围筛选后的月度数据
@@ -694,32 +756,37 @@ const lineChartOption = computed(() => {
     title: {
       text: '二级分类资金变化趋势',
       left: 'center',
-      top: 10
+      top: 5,
+      textStyle: {
+        fontSize: '13px',
+        fontWeight: '500'
+      }
     },
     tooltip: commonChartConfig.tooltip,
     grid: commonChartConfig.grid,
     legend: {
       ...commonChartConfig.legend,
       data: legendData,
-      itemWidth: 15,  // 统一图例项宽度
-      itemHeight: 15, // 统一图例项高度
+      itemWidth: 10,  // 统一图例项宽度
+      itemHeight: 10, // 统一图例项高度
       textStyle: {
-        fontSize: 12  // 统一图例文字大小
+        fontSize: '11px'  // 统一图例文字大小
       }
     },
     xAxis: [
       {
         type: 'category',
         boundaryGap: false,
-        data: xAxisData
+        data: xAxisData,
+        ...commonChartConfig.xAxis
       }
     ],
     yAxis: [
       {
         type: 'value',
-        name: '金额(元)',
         min: customChartMin.value !== null ? customChartMin.value : 'dataMin',
-        max: customChartMax.value !== null ? customChartMax.value : 'dataMax'
+        max: customChartMax.value !== null ? customChartMax.value : 'dataMax',
+        ...commonChartConfig.yAxis
       }
     ],
     series: series
@@ -818,16 +885,20 @@ const lineChartCategoryOption = computed(() => {
     title: {
       text: '一级分类资金变化趋势',
       left: 'center',
-      top: 10
+      top: 5,
+      textStyle: {
+        fontSize: '13px',
+        fontWeight: '500'
+      }
     },
     tooltip: commonChartConfig.tooltip,
     legend: {
       ...commonChartConfig.legend,
       data: legendData,
-      itemWidth: 15,
-      itemHeight: 15,
+      itemWidth: 10,
+      itemHeight: 10,
       textStyle: {
-        fontSize: 12
+        fontSize: '11px'
       }
     },
     grid: commonChartConfig.grid,
@@ -835,15 +906,16 @@ const lineChartCategoryOption = computed(() => {
       {
         type: 'category',
         boundaryGap: false,
-        data: xAxisData
+        data: xAxisData,
+        ...commonChartConfig.xAxis
       }
     ],
     yAxis: [
       {
         type: 'value',
-        name: '金额(元)',
         min: customChartMin.value !== null ? customChartMin.value : 'dataMin',
-        max: customChartMax.value !== null ? customChartMax.value : 'dataMax'
+        max: customChartMax.value !== null ? customChartMax.value : 'dataMax',
+        ...commonChartConfig.yAxis
       }
     ],
     series: series
@@ -956,29 +1028,34 @@ const areaChartOption = computed(() => {
     title: {
       text: '总金额变化',
       left: 'center',
-      top: 10
+      top: 5,
+      textStyle: {
+        fontSize: '13px',
+        fontWeight: '500'
+      }
     },
     tooltip: commonChartConfig.tooltip,
     legend: {
       ...commonChartConfig.legend,
       data: ['广义金额', '可支配金额'],
-      itemWidth: 15,
-      itemHeight: 15,
+      itemWidth: 10,
+      itemHeight: 10,
       textStyle: {
-        fontSize: 12
+        fontSize: '11px'
       }
     },
     grid: commonChartConfig.grid,
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: xAxisData
+      data: xAxisData,
+      ...commonChartConfig.xAxis
     },
     yAxis: {
       type: 'value',
-      name: '金额(元)',
       min: customChartMin.value !== null ? customChartMin.value : 'dataMin',
-      max: customChartMax.value !== null ? customChartMax.value : 'dataMax'
+      max: customChartMax.value !== null ? customChartMax.value : 'dataMax',
+      ...commonChartConfig.yAxis
     },
     series: [
       {
@@ -1115,16 +1192,20 @@ const annualBarChartOption = computed(() => {
     title: {
       text: '月度资金汇总',
       left: 'center',
-      top: 10
+      top: 5,
+      textStyle: {
+        fontSize: '13px',
+        fontWeight: '500'
+      }
     },
     tooltip: commonChartConfig.tooltip,
     legend: {
       ...commonChartConfig.legend,
       data: ['资产', '负债'],
-      itemWidth: 15,
-      itemHeight: 15,
+      itemWidth: 10,
+      itemHeight: 10,
       textStyle: {
-        fontSize: 12
+        fontSize: '11px'
       }
     },
     grid: commonChartConfig.grid,
@@ -1135,7 +1216,7 @@ const annualBarChartOption = computed(() => {
     },
     yAxis: {
       type: 'value',
-      name: '金额(元)'
+      ...commonChartConfig.yAxis
     },
     series: [
       {
