@@ -185,18 +185,29 @@
       <n-card>
         <v-chart
           :option="lineChartOption"
-          :style="{ height: chartHeight }"
+          :style="{ height: chartHeight, width: '100%' }"
           @click="handleChartClick"
         />
       </n-card>
     </div>
-
+    
+    <!-- 一级分类资金变化趋势 -->
+    <div class="chart-section">
+      <n-card>
+        <v-chart
+          :option="lineChartCategoryOption"
+          :style="{ height: chartHeight, width: '100%' }"
+          @click="handleChartClick"
+        />
+      </n-card>
+    </div>
+    
     <!-- 面积图 -->
     <div class="chart-section">
       <n-card>
         <v-chart
           :option="areaChartOption"
-          :style="{ height: chartHeight }"
+          :style="{ height: chartHeight, width: '100%' }"
           @click="handleChartClick"
         />
       </n-card>
@@ -207,7 +218,7 @@
       <n-card>
         <v-chart
           :option="annualBarChartOption"
-          :style="{ height: chartHeight }"
+          :style="{ height: chartHeight, width: '100%' }"
           @click="handleChartClick"
         />
       </n-card>
@@ -467,6 +478,33 @@ const customChartMin = ref(null)
 const customChartMax = ref(null)
 const showCustomLimitsForm = ref(false)
 
+// 图表公共配置
+const commonChartConfig = {
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: {
+      type: 'cross',
+      label: {
+        backgroundColor: '#6a7985'
+      }
+    },
+    triggerOn: 'mousemove'
+  },
+  legend: {
+    top: 40,
+    left: 'center',
+    type: 'scroll',
+    orient: 'horizontal'
+  },
+  grid: {
+    left: '5%',
+    right: '5%',
+    bottom: '5%',
+    top: '20%',
+    containLabel: true
+  }
+}
+
 // 按时间范围筛选后的月度数据
 const timeFilteredMonthlyStats = computed(() => {
   // 先根据时间范围筛选原始条目
@@ -623,34 +661,145 @@ const lineChartOption = computed(() => {
   
   return {
     title: {
-      text: '资金变化趋势',
+      text: '二级分类资金变化趋势',
       left: 'center',
       top: 10
     },
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'cross',
-        label: {
-          backgroundColor: '#6a7985'
-        }
-      },
-      triggerOn: 'mousemove'
-    },
+    tooltip: commonChartConfig.tooltip,
+    grid: commonChartConfig.grid,
     legend: {
+      ...commonChartConfig.legend,
       data: legendData,
-      top: 40,
+      itemWidth: 15,  // 统一图例项宽度
+      itemHeight: 15, // 统一图例项高度
+      textStyle: {
+        fontSize: 12  // 统一图例文字大小
+      }
+    },
+    xAxis: [
+      {
+        type: 'category',
+        boundaryGap: false,
+        data: xAxisData
+      }
+    ],
+    yAxis: [
+      {
+        type: 'value',
+        name: '金额(元)',
+        min: customChartMin.value !== null ? customChartMin.value : 'dataMin',
+        max: customChartMax.value !== null ? customChartMax.value : 'dataMax'
+      }
+    ],
+    series: series
+  }
+})
+
+// 一级分类资金变化趋势数据
+const lineChartCategoryOption = computed(() => {
+  const stats = timeFilteredMonthlyStats.value
+  const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
+  
+  // 按一级分类分组，计算每个分类在每个月的金额
+  const categoryAmounts = new Map()
+  
+  // 遍历所有月度数据
+  stats.forEach(stat => {
+    const monthKey = stat.key
+    
+    // 遍历当月所有条目
+    stat.items.forEach(item => {
+      const subcategoryId = item.subcategory_id
+      
+      // 查找二级分类
+      const subcategory = subcategories.value.find(s => s.id === subcategoryId)
+      if (!subcategory) return
+      
+      // 查找一级分类
+      const category = categories.value.find(c => c.id === subcategory.category_id)
+      if (!category) return
+      
+      // 检查是否需要根据一级分类过滤
+      if (selectedCategory.value && category.id !== selectedCategory.value) {
+        return // 不符合选中的一级分类，跳过
+      }
+      
+      const categoryName = category.name
+      
+      // 初始化一级分类数据
+      if (!categoryAmounts.has(categoryName)) {
+        categoryAmounts.set(categoryName, new Map())
+      }
+      
+      const categoryMap = categoryAmounts.get(categoryName)
+      // 累加当月金额
+      const currentAmount = categoryMap.get(monthKey) || 0
+      categoryMap.set(monthKey, currentAmount + item.amount)
+    })
+  })
+  
+  // 准备系列数据
+  const series = []
+  const legendData = []
+  
+  // 定义颜色数组，用于不同的一级分类
+  const colors = ['#18a058', '#f53f3f', '#3b82f6', '#e2c044', '#8c52ff', '#ff7875', '#5cdbd3', '#ffa940', '#95de64', '#f7b801', '#722ed1', '#13c2c2', '#eb2f96', '#fa8c16', '#a0d911']
+  let colorIndex = 0
+  
+  // 为每个一级分类创建系列
+  categoryAmounts.forEach((amountMap, categoryName) => {
+    // 准备该分类在所有月份的数据
+    const data = stats.map(stat => {
+      return amountMap.get(stat.key) || 0
+    })
+    
+    series.push({
+      name: categoryName,
+      type: 'line',
+      data: data,
+      smooth: true,
+      emphasis: {
+        focus: 'series'
+      },
+      itemStyle: {
+        color: colors[colorIndex % colors.length]
+      },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [
+            { offset: 0, color: `${colors[colorIndex % colors.length]}4d` }, // 4d 是透明度
+            { offset: 1, color: `${colors[colorIndex % colors.length]}0d` } // 0d 是透明度
+          ]
+        }
+      }
+    })
+    
+    legendData.push(categoryName)
+    colorIndex++
+  })
+  
+  return {
+    title: {
+      text: '一级分类资金变化趋势',
       left: 'center',
-      type: 'scroll',
-      orient: 'horizontal'
+      top: 10
     },
-    grid: {
-      left: '5%',
-      right: '5%',
-      bottom: '5%',
-      top: '20%',
-      containLabel: true
+    tooltip: commonChartConfig.tooltip,
+    legend: {
+      ...commonChartConfig.legend,
+      data: legendData,
+      itemWidth: 15,
+      itemHeight: 15,
+      textStyle: {
+        fontSize: 12
+      }
     },
+    grid: commonChartConfig.grid,
     xAxis: [
       {
         type: 'category',
@@ -782,30 +931,17 @@ const areaChartOption = computed(() => {
       left: 'center',
       top: 10
     },
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'cross',
-        label: {
-          backgroundColor: '#6a7985'
-        }
-      },
-      triggerOn: 'mousemove'
-    },
+    tooltip: commonChartConfig.tooltip,
     legend: {
+      ...commonChartConfig.legend,
       data: ['累计总金额', '年度累计金额'],
-      top: 40,
-      left: 'center',
-      type: 'scroll',
-      orient: 'horizontal'
+      itemWidth: 15,
+      itemHeight: 15,
+      textStyle: {
+        fontSize: 12
+      }
     },
-    grid: {
-      left: '5%',
-      right: '5%',
-      bottom: '5%',
-      top: '20%',
-      containLabel: true
-    },
+    grid: commonChartConfig.grid,
     xAxis: {
       type: 'category',
       boundaryGap: false,
@@ -919,30 +1055,17 @@ const annualBarChartOption = computed(() => {
       left: 'center',
       top: 10
     },
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'cross',
-        label: {
-          backgroundColor: '#6a7985'
-        }
-      },
-      triggerOn: 'mousemove'
-    },
+    tooltip: commonChartConfig.tooltip,
     legend: {
+      ...commonChartConfig.legend,
       data: ['金额', '趋势'],
-      top: 40,
-      left: 'center',
-      type: 'scroll',
-      orient: 'horizontal'
+      itemWidth: 15,
+      itemHeight: 15,
+      textStyle: {
+        fontSize: 12
+      }
     },
-    grid: {
-      left: '5%',
-      right: '5%',
-      bottom: '5%',
-      top: '20%',
-      containLabel: true
-    },
+    grid: commonChartConfig.grid,
     xAxis: {
       type: 'category',
       data: xAxisData
@@ -2720,8 +2843,11 @@ onMounted(() => {
 }
 
 /* 图表相关样式 */
+/* 图表容器样式优化 */
 .chart-section {
   margin-bottom: 30px;
+  width: 100%;          /* 强制容器宽度100% */
+  box-sizing: border-box; /* 确保padding不影响宽度计算 */
 }
 
 .chart-section :deep(.n-card) {
