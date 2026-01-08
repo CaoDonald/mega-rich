@@ -167,12 +167,17 @@ const handleUserUpdated = (updatedUser) => {
   align-items: center;
   padding: 0 20px;
   height: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .logo h1 {
   margin: 0;
   font-size: 24px;
   color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nav-menu {
@@ -196,17 +201,44 @@ const handleUserUpdated = (updatedUser) => {
   justify-content: center;
   align-items: center;
   padding: 20px;
+  text-align: center;
 }
 
+/* 移动端响应式设计 */
 @media (max-width: 768px) {
   .header-content {
     gap: 10px;
     padding: 10px;
+    flex-direction: row;
+  }
+
+  .logo h1 {
+    font-size: 20px;
+    flex: 1;
+    text-align: left;
+  }
+
+  .user-info {
+    flex: 0 0 auto;
   }
 
   .nav-menu {
-    flex-wrap: wrap;
-    justify-content: center;
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content {
+    padding: 8px;
+  }
+
+  .logo h1 {
+    font-size: 18px;
+  }
+
+  .footer-content {
+    padding: 15px 10px;
+    font-size: 14px;
   }
 }
 </style>

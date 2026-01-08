@@ -231,7 +231,9 @@
       preset="dialog"
       :destroy-on-close="true"
       width="auto"
-      :min-width="400"
+      :min-width="300"
+      max-width="95vw"
+      :style="{ maxHeight: '90vh', overflow: 'auto' }"
     >
       <AddEditItemForm
         :categories="categories"
@@ -248,7 +250,9 @@
       preset="dialog"
       :destroy-on-close="true"
       width="auto"
-      :min-width="400"
+      :min-width="300"
+      max-width="95vw"
+      :style="{ maxHeight: '90vh', overflow: 'auto' }"
     >
       <AddEditItemForm
         v-if="editingItem"
@@ -267,7 +271,9 @@
       preset="dialog"
       :destroy-on-close="true"
       width="auto"
-      :min-width="400"
+      :min-width="300"
+      max-width="95vw"
+      :style="{ maxHeight: '90vh', overflow: 'auto' }"
     >
       <ItemDetail
         v-if="viewingItem"
@@ -287,7 +293,8 @@
       positive-text="删除"
       @positive-click="confirmDelete"
       width="auto"
-      :min-width="300"
+      :min-width="280"
+      max-width="90vw"
     >
       <div class="delete-confirm-content">
         <p>确定要删除这条资金条目吗？</p>
@@ -303,8 +310,9 @@
       preset="dialog"
       :destroy-on-close="true"
       width="auto"
-      :min-width="800"
-      max-width="90vw"
+      :min-width="300"
+      max-width="95vw"
+      :style="{ maxHeight: '90vh', overflow: 'auto' }"
     >
       <CategoryManagerModal
         :primary-categories="categories"
@@ -321,8 +329,9 @@
       preset="dialog"
       :destroy-on-close="true"
       width="auto"
-      :min-width="600"
-      max-width="90vw"
+      :min-width="300"
+      max-width="95vw"
+      :style="{ maxHeight: '90vh', overflow: 'auto' }"
     >
       <div class="batch-import-container">
         <div class="import-info">
@@ -485,23 +494,45 @@ const commonChartConfig = {
     axisPointer: {
       type: 'cross',
       label: {
-        backgroundColor: '#6a7985'
+        backgroundColor: '#6a7985',
+        fontSize: '12px'
       }
     },
-    triggerOn: 'mousemove'
+    triggerOn: 'mousemove',
+    formatter: function(params) {
+      let result = params[0].axisValue + '<br/>';
+      params.forEach(param => {
+        result += `${param.marker}${param.seriesName}: ${param.value}元<br/>`;
+      });
+      return result;
+    }
   },
   legend: {
     top: 40,
     left: 'center',
     type: 'scroll',
-    orient: 'horizontal'
+    orient: 'horizontal',
+    textStyle: {
+      fontSize: '12px'
+    },
+    itemWidth: 12,
+    itemHeight: 12,
+    pageIconSize: 10,
+    pageTextStyle: {
+      fontSize: '10px'
+    }
   },
   grid: {
     left: '5%',
     right: '5%',
-    bottom: '5%',
-    top: '20%',
+    bottom: '8%',
+    top: '25%',
     containLabel: true
+  },
+  dataZoom: {
+    type: 'inside',
+    start: 0,
+    end: 100
   }
 }
 
@@ -1722,6 +1753,7 @@ const columns = [
   {
     title: '一级分类',
     key: 'category',
+    width: 120,
     render(row) {
       const subcategory = subcategories.value.find(s => s.id === row.subcategory_id)
       if (!subcategory) return ''
@@ -1732,6 +1764,7 @@ const columns = [
   {
     title: '二级分类',
     key: 'subcategory',
+    width: 120,
     render(row) {
       const subcategory = subcategories.value.find(s => s.id === row.subcategory_id)
       return subcategory?.name || ''
@@ -1740,6 +1773,7 @@ const columns = [
   {
     title: '金额',
     key: 'amount',
+    width: 120,
     render(row) {
       const isPositive = row.amount >= 0
       return h('div', {
@@ -1760,6 +1794,7 @@ const columns = [
   {
     title: '记录日期',
     key: 'record_date',
+    width: 120,
     render(row) {
       return new Date(row.record_date).toLocaleDateString()
     }
@@ -1767,6 +1802,7 @@ const columns = [
   {
     title: '增长',
     key: 'growth',
+    width: 120,
     render(row) {
       const value = parseFloat(row.growth || 0)
       const isNegative = value < 0
@@ -1783,6 +1819,7 @@ const columns = [
   {
     title: '环比',
     key: 'growthRate',
+    width: 120,
     render(row) {
       const value = parseFloat(row.growthRate || 0)
       const isNegative = value < 0
@@ -1799,6 +1836,7 @@ const columns = [
   {
     title: '同比',
     key: 'yoyGrowthRate',
+    width: 120,
     render(row) {
       const value = parseFloat(row.yoyGrowthRate || 0)
       const isNegative = value < 0
@@ -1815,7 +1853,7 @@ const columns = [
   {
     title: '',
     key: 'actions',
-    fixed: 'right',
+    width: 120,
     render(row) {
       return h('div', { class: 'actions-cell' }, [
         // 查看图标按钮
@@ -2949,6 +2987,7 @@ onMounted(() => {
   gap: 10px;
 }
 
+/* 平板设备响应式设计 */
 @media (max-width: 768px) {
   .balance-container {
     padding: 20px 15px;
@@ -2962,6 +3001,11 @@ onMounted(() => {
   .action-buttons {
     flex-direction: column;
     gap: 10px;
+    align-items: stretch;
+  }
+  
+  .action-buttons :deep(.n-button) {
+    width: 100%;
   }
   
   .filter-section {
@@ -2973,15 +3017,24 @@ onMounted(() => {
   .filter-select {
     width: 100%;
     max-width: 100%;
+    min-width: auto;
   }
   
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
   
   .statistics-section :deep(.n-card) {
     padding: 15px;
+  }
+  
+  .stat-item {
+    padding: 20px 15px;
+  }
+  
+  .stat-item :deep(.n-statistic-value) {
+    font-size: 1.5rem;
   }
   
   .actions-cell {
@@ -3008,6 +3061,148 @@ onMounted(() => {
   
   .chart-section :deep(.n-card) {
     padding: 10px;
+  }
+  
+  /* 表格响应式设计 */
+  .items-list :deep(.n-data-table) {
+    font-size: 0.85rem;
+  }
+  
+  .items-list :deep(.n-data-table-thead-th),
+  .items-list :deep(.n-data-table-tbody-td) {
+    padding: 8px 10px;
+  }
+  
+  /* 统计表格响应式设计 */
+  .amounts-table-section :deep(.n-data-table) {
+    font-size: 0.85rem;
+  }
+  
+  /* 图表高度响应式调整 */
+  .chart-section :deep(.v-chart) {
+    height: 300px !important;
+  }
+}
+
+/* 手机设备响应式设计 */
+@media (max-width: 480px) {
+  .balance-container {
+    padding: 15px 10px;
+    min-height: calc(100vh - 100px);
+  }
+  
+  .balance-container h2 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+  }
+  
+  .action-buttons {
+    margin-bottom: 20px;
+  }
+  
+  .filter-section {
+    margin-bottom: 20px;
+    padding: 12px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .stat-item {
+    padding: 15px 12px;
+  }
+  
+  .stat-item :deep(.n-statistic-value) {
+    font-size: 1.3rem;
+  }
+  
+  .stat-item :deep(.n-statistic-suffix) {
+    font-size: 1rem;
+  }
+  
+  .statistics-section {
+    margin-bottom: 20px;
+  }
+  
+  .items-list {
+    margin-bottom: 20px;
+  }
+  
+  .chart-section {
+    margin-bottom: 20px;
+  }
+  
+  /* 表格响应式设计 - 允许横向滚动 */
+  .items-list :deep(.n-card) {
+    overflow-x: auto;
+  }
+  
+  .items-list :deep(.n-data-table-wrapper) {
+    overflow-x: auto;
+    width: 100%;
+  }
+  
+  .amounts-table-section :deep(.n-card) {
+    overflow-x: auto;
+  }
+  
+  .amounts-table-section :deep(.n-data-table-wrapper) {
+    overflow-x: auto;
+    width: 100%;
+  }
+  
+  /* 图表高度进一步调整 */
+  .chart-section :deep(.v-chart) {
+    height: 250px !important;
+  }
+  
+  /* 批量导入样式调整 */
+  .batch-import-container {
+    padding: 0 10px;
+  }
+  
+  /* 详情页样式调整 */
+  .detail-row {
+    padding: 8px;
+  }
+  
+  .detail-label {
+    font-size: 0.9rem;
+  }
+  
+  .detail-value {
+    font-size: 0.9rem;
+  }
+}
+
+/* 超小屏幕设备响应式设计 */
+@media (max-width: 360px) {
+  .balance-container {
+    padding: 10px 8px;
+  }
+  
+  .action-buttons {
+    gap: 8px;
+  }
+  
+  .filter-section {
+    gap: 8px;
+    padding: 10px;
+  }
+  
+  .stats-grid {
+    gap: 10px;
+  }
+  
+  .stat-item {
+    padding: 12px 10px;
+  }
+  
+  /* 图表高度最小调整 */
+  .chart-section :deep(.v-chart) {
+    height: 200px !important;
   }
 }
 </style>

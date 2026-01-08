@@ -113,5 +113,106 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: #f5f5f5;
   color: #333;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* 全局响应式容器样式 */
+.container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* 防止内容溢出 */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 响应式字体大小 */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+  
+  h1 {
+    font-size: 1.8rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  h3 {
+    font-size: 1.3rem;
+  }
+  
+  h4 {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 13px;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  h2 {
+    font-size: 1.3rem;
+  }
+  
+  h3 {
+    font-size: 1.1rem;
+  }
+  
+  h4 {
+    font-size: 1rem;
+  }
+}
+
+/* 通用按钮响应式样式 */
+:root {
+  --custom-border-radius: 8px;
+  --custom-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --custom-border: 1px solid rgba(255, 255, 255, 0.1);
+  --custom-color: #333;
+  --custom-color-secondary: #666;
+  --custom-color-brand: #3b82f6;
+  --custom-color-brand-hover: #2563eb;
+}
+
+/* 确保所有组件都有合适的盒模型 */
+* {
+  box-sizing: border-box;
+}
+
+/* 移动端触摸优化 */
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 滚动条样式优化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 </style>

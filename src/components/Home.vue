@@ -69,6 +69,7 @@ const exploreFeatures = () => {
   padding: 40px 20px;
   max-width: 1200px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .hero-section {
@@ -78,17 +79,20 @@ const exploreFeatures = () => {
   border-radius: 12px;
   color: white;
   margin-bottom: 60px;
+  box-sizing: border-box;
 }
 
 .hero-section h2 {
   font-size: 36px;
   margin-bottom: 16px;
+  line-height: 1.2;
 }
 
 .hero-section p {
   font-size: 18px;
   margin-bottom: 32px;
   opacity: 0.9;
+  line-height: 1.5;
 }
 
 .features-section {
@@ -99,6 +103,7 @@ const exploreFeatures = () => {
 .features-section h3 {
   font-size: 28px;
   margin-bottom: 40px;
+  line-height: 1.2;
 }
 
 .features-grid {
@@ -113,6 +118,7 @@ const exploreFeatures = () => {
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
 }
 
 .feature-card:hover {
@@ -123,16 +129,24 @@ const exploreFeatures = () => {
 .feature-card h4 {
   font-size: 20px;
   margin: 20px 0 10px 0;
+  line-height: 1.2;
 }
 
 .feature-card p {
   color: #666;
   font-size: 16px;
+  line-height: 1.5;
 }
 
+/* 平板设备响应式设计 */
 @media (max-width: 768px) {
+  .home-container {
+    padding: 20px 15px;
+  }
+
   .hero-section {
     padding: 40px 20px;
+    margin-bottom: 40px;
   }
 
   .hero-section h2 {
@@ -141,10 +155,65 @@ const exploreFeatures = () => {
 
   .hero-section p {
     font-size: 16px;
+    margin-bottom: 24px;
+  }
+
+  .features-section {
+    margin-bottom: 40px;
+  }
+
+  .features-section h3 {
+    font-size: 24px;
+    margin-bottom: 30px;
   }
 
   .features-grid {
     grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .feature-card {
+    padding: 25px;
+  }
+}
+
+/* 手机设备响应式设计 */
+@media (max-width: 480px) {
+  .home-container {
+    padding: 15px 10px;
+  }
+
+  .hero-section {
+    padding: 30px 15px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+  }
+
+  .hero-section h2 {
+    font-size: 24px;
+  }
+
+  .hero-section p {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  .features-section h3 {
+    font-size: 20px;
+    margin-bottom: 25px;
+  }
+
+  .feature-card {
+    padding: 20px 15px;
+  }
+
+  .feature-card h4 {
+    font-size: 18px;
+    margin: 15px 0 8px 0;
+  }
+
+  .feature-card p {
+    font-size: 14px;
   }
 }
 </style>
