@@ -856,85 +856,81 @@ const areaChartOption = computed(() => {
   const stats = filteredStats.length > 0 ? filteredStats : originalStats
   const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
   
-  // 计算累计金额
-  let cumulativeTotal = 0
-  const cumulativeData = stats.map(stat => {
-    // 计算当前月符合条件的金额总和
-    const monthAmount = stat.items.reduce((sum, item) => {
+  // 计算广义金额和可支配金额的当月数据
+  const broadAmountData = stats.map(stat => {
+    // 筛选符合条件的条目
+    const filteredItems = stat.items.filter(item => {
       const subcategoryId = item.subcategory_id
       
       // 查找二级分类
       const subcategory = subcategories.value.find(s => s.id === subcategoryId)
-      if (!subcategory) return sum
+      if (!subcategory) return false
       
       // 检查是否需要根据一级分类过滤
       if (selectedCategory.value) {
         // 查找二级分类所属的一级分类
         const category = categories.value.find(c => c.id === subcategory.category_id)
         if (!category || category.id !== selectedCategory.value) {
-          return sum // 不符合选中的一级分类，跳过
+          return false // 不符合选中的一级分类，跳过
         }
       }
       
       // 检查是否需要根据二级分类过滤
       if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
-        return sum // 不符合选中的二级分类，跳过
+        return false // 不符合选中的二级分类，跳过
       }
       
-      return sum + item.amount
-    }, 0)
+      return true
+    })
     
-    cumulativeTotal += monthAmount
-    return cumulativeTotal
+    // 计算广义金额
+    const { broadAmount } = calculateBroadAndDisposableAmount(filteredItems)
+    
+    return broadAmount
   })
   
-  // 计算年度累计金额
-  let currentYear = null
-  let annualCumulative = 0
-  const annualCumulativeData = stats.map(stat => {
-    // 计算当前月符合条件的金额总和
-    const monthAmount = stat.items.reduce((sum, item) => {
+  const disposableAmountData = stats.map(stat => {
+    // 筛选符合条件的条目
+    const filteredItems = stat.items.filter(item => {
       const subcategoryId = item.subcategory_id
       
       // 查找二级分类
       const subcategory = subcategories.value.find(s => s.id === subcategoryId)
-      if (!subcategory) return sum
+      if (!subcategory) return false
       
       // 检查是否需要根据一级分类过滤
       if (selectedCategory.value) {
         // 查找二级分类所属的一级分类
         const category = categories.value.find(c => c.id === subcategory.category_id)
         if (!category || category.id !== selectedCategory.value) {
-          return sum // 不符合选中的一级分类，跳过
+          return false // 不符合选中的一级分类，跳过
         }
       }
       
       // 检查是否需要根据二级分类过滤
       if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
-        return sum // 不符合选中的二级分类，跳过
+        return false // 不符合选中的二级分类，跳过
       }
       
-      return sum + item.amount
-    }, 0)
+      return true
+    })
     
-    if (currentYear !== stat.year) {
-      currentYear = stat.year
-      annualCumulative = 0
-    }
-    annualCumulative += monthAmount
-    return annualCumulative
+    // 计算可支配金额
+    const { disposableAmount } = calculateBroadAndDisposableAmount(filteredItems)
+    
+    return disposableAmount
   })
   
   return {
     title: {
-      text: '累计金额变化',
+      text: '总金额变化',
       left: 'center',
       top: 10
     },
     tooltip: commonChartConfig.tooltip,
     legend: {
       ...commonChartConfig.legend,
-      data: ['累计总金额', '年度累计金额'],
+      data: ['广义金额', '可支配金额'],
       itemWidth: 15,
       itemHeight: 15,
       textStyle: {
@@ -955,9 +951,9 @@ const areaChartOption = computed(() => {
     },
     series: [
       {
-        name: '累计总金额',
+        name: '广义金额',
         type: 'line',
-        data: cumulativeData,
+        data: broadAmountData,
         smooth: true,
         emphasis: {
           focus: 'series'
@@ -977,9 +973,9 @@ const areaChartOption = computed(() => {
         }
       },
       {
-        name: '年度累计金额',
+        name: '可支配金额',
         type: 'line',
-        data: annualCumulativeData,
+        data: disposableAmountData,
         smooth: true,
         emphasis: {
           focus: 'series'
@@ -1002,11 +998,36 @@ const areaChartOption = computed(() => {
   }
 })
 
-// 年度汇总数据
-const annualSummary = computed(() => {
-  const annualData = new Map()
+// 月度负债和资产数据
+const monthlyAssetsAndLiabilities = computed(() => {
+  // 先按月份和二级分类分组，每个分组只保留最新的一条记录
+  const monthlySubcategoryData = new Map()
   
+  // 遍历所有条目，按月份和二级分类分组，保留最新记录
   items.value.forEach(item => {
+    const recordDate = new Date(item.record_date)
+    const year = recordDate.getFullYear()
+    const month = recordDate.getMonth()
+    const subcategoryId = item.subcategory_id
+    const key = `${year}-${month}-${subcategoryId}`
+    
+    // 检查是否已有该月份该二级分类的数据
+    if (!monthlySubcategoryData.has(key)) {
+      monthlySubcategoryData.set(key, item)
+    } else {
+      // 如果已有数据，比较日期，只保留最新的
+      const existingItem = monthlySubcategoryData.get(key)
+      const existingDate = new Date(existingItem.record_date)
+      if (recordDate > existingDate) {
+        monthlySubcategoryData.set(key, item)
+      }
+    }
+  })
+  
+  // 再按月份分组计算资产和负债
+  const monthlyData = new Map()
+  
+  Array.from(monthlySubcategoryData.values()).forEach(item => {
     const subcategoryId = item.subcategory_id
     
     // 查找二级分类
@@ -1029,36 +1050,46 @@ const annualSummary = computed(() => {
     
     const recordDate = new Date(item.record_date)
     const year = recordDate.getFullYear()
+    const month = recordDate.getMonth()
+    const key = `${year}-${month}`
     
-    if (!annualData.has(year)) {
-      annualData.set(year, 0)
+    if (!monthlyData.has(key)) {
+      monthlyData.set(key, { positive: 0, negative: 0, year, month })
     }
     
-    annualData.set(year, annualData.get(year) + item.amount)
+    const monthData = monthlyData.get(key)
+    if (item.amount > 0) {
+      monthData.positive += item.amount
+    } else {
+      monthData.negative += item.amount
+    }
   })
   
-  // 转换为数组并按年份排序
-  return Array.from(annualData.entries())
-    .map(([year, amount]) => ({ year, amount }))
-    .sort((a, b) => a.year - b.year)
+  // 转换为数组并按月份排序
+  return Array.from(monthlyData.values())
+    .sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year
+      return a.month - b.month
+    })
 })
 
-// 年度汇总柱状图数据
+// 月度资金汇总面积图数据
 const annualBarChartOption = computed(() => {
-  const data = annualSummary.value
-  const xAxisData = data.map(item => item.year)
-  const amountData = data.map(item => item.amount)
+  const data = monthlyAssetsAndLiabilities.value
+  const xAxisData = data.map(item => `${item.year}-${(item.month + 1).toString().padStart(2, '0')}`)
+  const positiveData = data.map(item => parseFloat(item.positive.toFixed(2)))
+  const negativeData = data.map(item => Math.abs(parseFloat(item.negative.toFixed(2))))
   
   return {
     title: {
-      text: '年度资金汇总',
+      text: '月度资金汇总',
       left: 'center',
       top: 10
     },
     tooltip: commonChartConfig.tooltip,
     legend: {
       ...commonChartConfig.legend,
-      data: ['金额', '趋势'],
+      data: ['资产', '负债'],
       itemWidth: 15,
       itemHeight: 15,
       textStyle: {
@@ -1068,6 +1099,7 @@ const annualBarChartOption = computed(() => {
     grid: commonChartConfig.grid,
     xAxis: {
       type: 'category',
+      boundaryGap: false,
       data: xAxisData
     },
     yAxis: {
@@ -1076,23 +1108,47 @@ const annualBarChartOption = computed(() => {
     },
     series: [
       {
-        name: '金额',
-        type: 'bar',
-        data: amountData,
-        itemStyle: {
-          color: '#18a058'
+        name: '资产',
+        type: 'line',
+        data: positiveData,
+        smooth: true,
+        emphasis: {
+          focus: 'series'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(24, 160, 88, 0.3)' },
+              { offset: 1, color: 'rgba(24, 160, 88, 0.05)' }
+            ]
+          }
         }
       },
       {
-        name: '趋势',
+        name: '负债',
         type: 'line',
-        data: amountData,
+        data: negativeData,
         smooth: true,
-        itemStyle: {
-          color: '#f53f3f'
-        },
         emphasis: {
           focus: 'series'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(245, 63, 63, 0.3)' },
+              { offset: 1, color: 'rgba(245, 63, 63, 0.05)' }
+            ]
+          }
         }
       }
     ]
