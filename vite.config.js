@@ -4,4 +4,19 @@ import vue from '@vitejs/plugin-vue'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
+  base: './',
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vue-vendor': ['vue'],
+          'naive-ui': ['naive-ui'],
+          'supabase': ['@supabase/supabase-js'],
+        }
+      }
+    }
+  }
 })
