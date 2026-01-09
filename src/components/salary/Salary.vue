@@ -58,7 +58,7 @@
 
     <!-- 数据列表 -->
     <div class="records-list">
-      <n-card>
+      <n-card size="small">
         <n-data-table
             :columns="columns"
             :data="filteredRecords"
@@ -1587,7 +1587,7 @@ const columns = [
   {
     title: '金额',
     key: 'amount',
-    width: 120,
+    width: 150,
     render(row) {
       return `${row.amount.toFixed(2)}元`
     }
@@ -1603,7 +1603,7 @@ const columns = [
   {
     title: '增长',
     key: 'growth',
-    width: 120,
+    width: 150,
     render(row) {
       const value = parseFloat(row.growth || 0)
       const isNegative = value < 0
@@ -1652,15 +1652,9 @@ const columns = [
     }
   },
   {
-    title: '描述',
-    key: 'description',
-    ellipsis: {tooltip: true}
-  },
-  {
     title: '',
     key: 'actions',
-    width: 150, // 纯图标列宽可更小
-    fixed: 'right',
+    width: 120, // 纯图标列宽可更小
     render(row) {
       return h('div', { class: 'actions-cell' }, [
         // 查看图标按钮（原生 div + NIcon）
