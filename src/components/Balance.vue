@@ -516,20 +516,25 @@ const commonChartConfig = {
         backgroundColor: '#6a7985',
         fontSize: '11px',
         padding: [5, 8],
+        // 给坐标轴指示器标签也提升层级
         zlevel: 200,
+        // 确保标签不被裁剪
         overflow: 'none'
       },
+      // 提升坐标轴指示器本身的层级
       zlevel: 200
     },
     triggerOn: 'click',
     padding: 10,
+    // 进一步提高 zlevel 数值（避开其他元素的层级冲突）
     zlevel: 200,
     // 开启边界约束
-    confine: true,
+    confine: false,
     // 取消挂载到body
-    appendToBody: false,
+    appendToBody: true,
     textStyle: {
-      fontSize: '11px'
+      fontSize: '11px',
+      zlevel: 200
     },
     // 修复后的position函数：增加完整的空值判断
     position: function (point, params, dom, rect, size) {
@@ -1294,7 +1299,7 @@ const annualBarChartOption = computed(() => {
 
 // 图表点击事件
 const handleChartClick = (params) => {
-  message.info(`点击了: ${params.name} - ${params.value}`)
+  // message.info(`点击了: ${params.name} - ${params.value}`)
 }
 
 // 自定义图表上下限
