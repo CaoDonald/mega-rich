@@ -1576,7 +1576,7 @@ const statsColumns = [
   {
     title: '广义金额',
     key: 'broadAmount',
-    width: 120,
+    width: 150,
     render(row) {
       const isPositive = row.broadAmount >= 0
       return h('div', {
@@ -1589,7 +1589,7 @@ const statsColumns = [
   {
     title: '增长',
     key: 'broadGrowth',
-    width: 100,
+    width: 150,
     render(row) {
       const isPositive = row.broadGrowth >= 0
       return h('div', {
@@ -1628,7 +1628,7 @@ const statsColumns = [
   {
     title: '可支配金额',
     key: 'disposableAmount',
-    width: 140,
+    width: 150,
     render(row) {
       const isPositive = row.disposableAmount >= 0
       return h('div', {
@@ -1641,7 +1641,7 @@ const statsColumns = [
   {
     title: '增长',
     key: 'disposableGrowth',
-    width: 100,
+    width: 150,
     render(row) {
       const isPositive = row.disposableGrowth >= 0
       return h('div', {
@@ -1847,7 +1847,7 @@ const columns = [
   {
     title: '金额',
     key: 'amount',
-    width: 120,
+    width: 150,
     render(row) {
       const isPositive = row.amount >= 0
       return h('div', {
@@ -1855,7 +1855,7 @@ const columns = [
           display: 'flex',
           alignItems: 'center',
           gap: '5px',
-          color: isPositive ? '#18a058' : '#f53f3f'
+          color: isPositive ? '#f53f3f':'#18a058'
         }
       }, [
         h(NIcon, null, {
@@ -1876,7 +1876,7 @@ const columns = [
   {
     title: '增长',
     key: 'growth',
-    width: 120,
+    width: 150,
     render(row) {
       const value = parseFloat(row.growth || 0)
       const isNegative = value < 0
