@@ -516,25 +516,57 @@ const commonChartConfig = {
         backgroundColor: '#6a7985',
         fontSize: '11px',
         padding: [5, 8],
-        // 给坐标轴指示器标签也提升层级
         zlevel: 200,
-        // 确保标签不被裁剪
         overflow: 'none'
       },
-      // 提升坐标轴指示器本身的层级
       zlevel: 200
     },
     triggerOn: 'click',
     padding: 10,
-    // 进一步提高 zlevel 数值（避开其他元素的层级冲突）
     zlevel: 200,
-    confine: false,
-    // 关键：强制 tooltip 渲染到 body 下（脱离图表容器的层级限制）
-    appendToBody: true,
-    // 可选：增加 tooltip 内边距，避免内容边缘被遮挡
+    // 开启边界约束
+    confine: true,
+    // 取消挂载到body
+    appendToBody: false,
     textStyle: {
-      fontSize: '11px',
-      zlevel: 200
+      fontSize: '11px'
+    },
+    // 修复后的position函数：增加完整的空值判断
+    position: function (point, params, dom, rect, size) {
+      // 核心修复1：对所有关键参数做空值判断
+      if (!point || !rect || !size) {
+        // 返回默认位置（图表中心），避免报错
+        return ['50%', '50%'];
+      }
+
+      // 核心修复2：解构赋值并增加默认值
+      const [xPoint, yPoint] = point;
+      const { x: rectX, y: rectY, width: rectWidth, height: rectHeight } = rect;
+      const { contentWidth: tipWidth, contentHeight: tipHeight } = size;
+
+      // 移动端适配：默认显示在点击位置右上方
+      let x = xPoint + 10;
+      let y = yPoint - 10;
+
+      // 边界检查：避免tooltip超出图表容器
+      // 右侧超出
+      if (x + tipWidth > rectX + rectWidth) {
+        x = xPoint - tipWidth - 10;
+      }
+      // 左侧超出
+      if (x < rectX) {
+        x = rectX + 10;
+      }
+      // 上方超出
+      if (y < rectY) {
+        y = yPoint + 10;
+      }
+      // 下方超出
+      if (y + tipHeight > rectY + rectHeight) {
+        y = yPoint - tipHeight - 10;
+      }
+
+      return [x, y];
     }
   },
   legend: {
@@ -552,7 +584,6 @@ const commonChartConfig = {
       fontSize: '9px'
     },
     pageButtonGap: 5,
-    // 降低图例层级，避免遮挡 tooltip
     zlevel: 10
   },
   grid: {
@@ -561,14 +592,12 @@ const commonChartConfig = {
     bottom: '10%',
     top: '30%',
     containLabel: true,
-    // 降低网格层级
     zlevel: 10
   },
   dataZoom: {
     type: 'inside',
     start: 0,
     end: 100,
-    // 降低数据缩放组件层级
     zlevel: 10
   },
   xAxis: {
@@ -593,12 +622,8 @@ const commonChartConfig = {
       zlevel: 10
     },
     zlevel: 10
-  },
-  // 全局层级控制：确保 tooltip 所在画布层级最高
-  zlevel: 1
-}
-
-// 按时间范围筛选后的月度数据
+  }
+}// 按时间范围筛选后的月度数据
 const timeFilteredMonthlyStats = computed(() => {
   // 先根据时间范围筛选原始条目
   const filtered = filterByTimeRange(items.value, selectedTimeRange.value)
