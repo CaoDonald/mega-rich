@@ -87,90 +87,6 @@
           </div>
         </div>
         
-        <!-- 上下限设置表单 -->
-        <n-collapse v-model:expanded-names="expandedNames" style="margin-bottom: 20px;">
-          <n-collapse-item name="limitSettings" title="自定义上下限">
-            <div class="limit-settings-form">
-              <div class="limit-item">
-                <h4>月薪（元）</h4>
-                <div class="limit-inputs">
-                  <n-input 
-                    v-model:value="customLimits.salary.min" 
-                    type="number" 
-                    placeholder="最小值" 
-                    style="width: 100px; margin-right: 10px;"
-                  />
-                  <n-input 
-                    v-model:value="customLimits.salary.max" 
-                    type="number" 
-                    placeholder="最大值" 
-                    style="width: 100px;"
-                  />
-                </div>
-              </div>
-              
-              <div class="limit-item">
-                <h4>增长（元）</h4>
-                <div class="limit-inputs">
-                  <n-input 
-                    v-model:value="customLimits.growth.min" 
-                    type="number" 
-                    placeholder="最小值" 
-                    style="width: 100px; margin-right: 10px;"
-                  />
-                  <n-input 
-                    v-model:value="customLimits.growth.max" 
-                    type="number" 
-                    placeholder="最大值" 
-                    style="width: 100px;"
-                  />
-                </div>
-              </div>
-              
-              <div class="limit-item">
-                <h4>同比（%）</h4>
-                <div class="limit-inputs">
-                  <n-input 
-                    v-model:value="customLimits.yoy.min" 
-                    type="number" 
-                    placeholder="最小值" 
-                    style="width: 100px; margin-right: 10px;"
-                  />
-                  <n-input 
-                    v-model:value="customLimits.yoy.max" 
-                    type="number" 
-                    placeholder="最大值" 
-                    style="width: 100px;"
-                  />
-                </div>
-              </div>
-              
-              <div class="limit-item">
-                <h4>环比（%）</h4>
-                <div class="limit-inputs">
-                  <n-input 
-                    v-model:value="customLimits.mom.min" 
-                    type="number" 
-                    placeholder="最小值" 
-                    style="width: 100px; margin-right: 10px;"
-                  />
-                  <n-input 
-                    v-model:value="customLimits.mom.max" 
-                    type="number" 
-                    placeholder="最大值" 
-                    style="width: 100px;"
-                  />
-                </div>
-              </div>
-              
-              <div class="limit-actions">
-                <n-button type="primary" @click="updateChart">应用设置</n-button>
-                <n-button @click="resetLimits">重置</n-button>
-              </div>
-            </div>
-          </n-collapse-item>
-        </n-collapse>
-        
         <div class="stats-grid">
           <div class="stat-item">
             <n-statistic label="总金额" :value="totalAmount" suffix="元"/>
@@ -417,23 +333,14 @@ const updateChartHeight = () => {
   } else {
     chartHeight.value = '400px'
   }
-  
+
   // 更新所有图表实例的尺寸
   chartInstance.value?.resize()
   areaChartInstance.value?.resize()
   annualBarChartInstance.value?.resize()
 }
 
-// 自定义上下限状态
-const customLimits = ref({
-  salary: { min: null, max: null },
-  growth: { min: null, max: null },
-  yoy: { min: null, max: null },
-  mom: { min: null, max: null }
-})
 
-// 显示/隐藏上下限设置
-const expandedNames = ref([])
 
 // 弹窗状态
 const showAddModal = ref(false)
@@ -475,44 +382,44 @@ const filteredRecords = computed(() => {
       })
     }
   }
-  
+
   // 按日期排序（从旧到新）
   result = result.sort((a, b) => new Date(a.record_date) - new Date(b.record_date))
-  
+
   // 计算增长、同比和环比
   const calculatedResult = result.map(record => {
     const recordDate = new Date(record.record_date)
     const year = recordDate.getFullYear()
     const month = recordDate.getMonth()
-    
+
     let growth = 0
     let yoy = 0
     let mom = 0
-    
+
     if (record.type === 'salary') {
       // 月薪计算逻辑：月度比较
       // 查找上个月同类型记录
       const lastMonthRecord = result.find(r => {
         const rDate = new Date(r.record_date)
-        return r.type === record.type && 
-               rDate.getFullYear() === (month === 0 ? year - 1 : year) && 
+        return r.type === record.type &&
+               rDate.getFullYear() === (month === 0 ? year - 1 : year) &&
                rDate.getMonth() === (month === 0 ? 11 : month - 1)
       })
-      
+
       // 查找去年同期同类型记录
       const lastYearRecord = result.find(r => {
         const rDate = new Date(r.record_date)
-        return r.type === record.type && 
-               rDate.getFullYear() === year - 1 && 
+        return r.type === record.type &&
+               rDate.getFullYear() === year - 1 &&
                rDate.getMonth() === month
       })
-      
+
       // 计算增长（当前金额 - 上个月金额）
       growth = lastMonthRecord ? record.amount - lastMonthRecord.amount : 0
-      
+
       // 计算环比（增长 / 上个月金额 * 100%）
       mom = lastMonthRecord ? (growth / lastMonthRecord.amount * 100).toFixed(2) : 0
-      
+
       // 计算同比（(当前金额 - 去年同期金额) / 去年同期金额 * 100%）
       yoy = lastYearRecord ? ((record.amount - lastYearRecord.amount) / lastYearRecord.amount * 100).toFixed(2) : 0
     } else if (record.type === 'bonus') {
@@ -520,20 +427,20 @@ const filteredRecords = computed(() => {
       // 查找去年同类型记录（不考虑月份，只考虑年份）
       const lastYearRecord = result.find(r => {
         const rDate = new Date(r.record_date)
-        return r.type === record.type && 
+        return r.type === record.type &&
                rDate.getFullYear() === year - 1
       })
-      
+
       // 计算增长（当前金额 - 去年金额）
       growth = lastYearRecord ? record.amount - lastYearRecord.amount : 0
-      
+
       // 计算同比（(当前金额 - 去年金额) / 去年金额 * 100%）
       yoy = lastYearRecord ? ((record.amount - lastYearRecord.amount) / lastYearRecord.amount * 100).toFixed(2) : 0
-      
+
       // 年终奖环比为0（因为是年度发放，没有月度环比）
       mom = 0
     }
-    
+
     return {
       ...record,
       growth,
@@ -541,10 +448,10 @@ const filteredRecords = computed(() => {
       mom
     }
   })
-  
+
   // 最终按日期从新到旧排序
   const sortedResult = calculatedResult.sort((a, b) => new Date(b.record_date) - new Date(a.record_date))
-  
+
   // 分页处理
   return sortedResult
 })
@@ -554,11 +461,11 @@ const filteredRecords = computed(() => {
 // 按时间范围过滤的记录
 const timeFilteredRecords = computed(() => {
   let result = [...records.value]
-  
+
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
-  
+
   // 根据时间范围过滤记录
   if (timeRange.value === '1y') {
     // 近一年
@@ -589,7 +496,7 @@ const timeFilteredRecords = computed(() => {
       return recordDate >= threeYearsAgoStart && recordDate <= lastYearEnd
     })
   }
-  
+
   return result
 })
 
@@ -609,25 +516,16 @@ const averageBonus = computed(() => {
 })
 
 const averageAnnualSalary = computed(() => {
-  // 计算所选时间范围内的总收入
-  const total = timeFilteredRecords.value.reduce((sum, record) => sum + record.amount, 0)
+  // 计算月薪平均
+  const salaryRecords = timeFilteredRecords.value.filter(record => record.type === 'salary')
+  const avgSalary = salaryRecords.length === 0 ? 0 : (salaryRecords.reduce((sum, r) => sum + r.amount, 0) / salaryRecords.length)
   
-  // 计算实际月份数（精确到月份）
-  const monthMap = new Map() // 存储每个年份包含的月份
+  // 计算年终奖平均
+  const bonusRecords = timeFilteredRecords.value.filter(record => record.type === 'bonus')
+  const avgBonus = bonusRecords.length === 0 ? 0 : (bonusRecords.reduce((sum, r) => sum + r.amount, 0) / bonusRecords.length)
   
-  timeFilteredRecords.value.forEach(record => {
-    const recordDate = new Date(record.record_date)
-    const year = recordDate.getFullYear()
-    const month = recordDate.getMonth()
-    const key = `${year}-${month}`
-    monthMap.set(key, true)
-  })
-  
-  // 计算实际年份数（按12个月为一年计算）
-  const actualMonthCount = monthMap.size
-  const actualYearCount = actualMonthCount / 12
-  
-  return actualYearCount === 0 ? 0 : (total / actualYearCount).toFixed(2)
+  // 平均年薪 = 月薪平均 * 12 + 年终奖平均
+  return (avgSalary * 12 + avgBonus).toFixed(2)
 })
 
 const commonChartConfig = {
@@ -720,7 +618,7 @@ const commonChartConfig = {
 const chartData = computed(() => {
   // 首先获取所有原始记录
   let chartRecords = [...records.value]
-  
+
   // 应用selectedType和selectedDate过滤
   if (selectedType.value) {
     chartRecords = chartRecords.filter(record => record.type === selectedType.value)
@@ -736,12 +634,12 @@ const chartData = computed(() => {
       })
     }
   }
-  
+
   // 应用timeRange过滤
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
-  
+
   if (timeRange.value === '1y') {
     const oneYearAgo = new Date(currentYear - 1, currentMonth, now.getDate())
     chartRecords = chartRecords.filter(r => new Date(r.record_date) >= oneYearAgo)
@@ -768,48 +666,48 @@ const chartData = computed(() => {
       return recordDate >= threeYearsAgoStart && recordDate <= lastYearEnd
     })
   }
-  
+
   // 按日期排序（从旧到新）
   chartRecords = chartRecords.sort((a, b) => new Date(a.record_date) - new Date(b.record_date))
-  
+
   // 计算增长、同比和环比
   const calculatedChartRecords = chartRecords.map(record => {
     const recordDate = new Date(record.record_date)
     const year = recordDate.getFullYear()
     const month = recordDate.getMonth()
-    
+
     let growth = 0
     let yoy = 0
     let mom = 0
-    
+
     if (record.type === 'salary') {
       // 月薪计算逻辑：月度比较
       // 查找上个月同类型记录
       const lastMonthRecord = chartRecords.find(r => {
         const rDate = new Date(r.record_date)
-        return r.type === record.type && 
-               rDate.getFullYear() === (month === 0 ? year - 1 : year) && 
+        return r.type === record.type &&
+               rDate.getFullYear() === (month === 0 ? year - 1 : year) &&
                rDate.getMonth() === (month === 0 ? 11 : month - 1)
       })
-      
+
       // 查找去年同期同类型记录
       const lastYearRecord = chartRecords.find(r => {
         const rDate = new Date(r.record_date)
-        return r.type === record.type && 
-               rDate.getFullYear() === year - 1 && 
+        return r.type === record.type &&
+               rDate.getFullYear() === year - 1 &&
                rDate.getMonth() === month
       })
-      
+
       // 计算增长（当前金额 - 上个月金额）
       growth = lastMonthRecord ? record.amount - lastMonthRecord.amount : 0
-      
+
       // 计算环比（增长 / 上个月金额 * 100%）
       mom = lastMonthRecord ? (growth / lastMonthRecord.amount * 100).toFixed(2) : 0
-      
+
       // 计算同比（(当前金额 - 去年同期金额) / 去年同期金额 * 100%）
       yoy = lastYearRecord ? ((record.amount - lastYearRecord.amount) / lastYearRecord.amount * 100).toFixed(2) : 0
     }
-    
+
     return {
       ...record,
       growth,
@@ -817,21 +715,21 @@ const chartData = computed(() => {
       mom
     }
   })
-  
+
   // 过滤出月薪记录
   const salaryRecords = calculatedChartRecords
     .filter(r => r.type === 'salary')
     .sort((a, b) => new Date(a.record_date) - new Date(b.record_date))
-  
+
   // 按月份分组
   const monthGroups = {}
-  
+
   salaryRecords.forEach(record => {
     const date = new Date(record.record_date)
     const year = date.getFullYear()
     const month = date.getMonth()
     const key = `${year}-${String(month + 1).padStart(2, '0')}`
-    
+
     if (!monthGroups[key]) {
       monthGroups[key] = {
         month: key,
@@ -840,7 +738,7 @@ const chartData = computed(() => {
         mom: 0
       }
     }
-    
+
     // 使用最新的记录数据（如果同一月份有多个记录）
     monthGroups[key] = {
       month: key,
@@ -849,10 +747,10 @@ const chartData = computed(() => {
       mom: parseFloat(record.mom || 0)
     }
   })
-  
+
   // 转换为数组并按月份排序
   const sortedData = Object.values(monthGroups).sort((a, b) => a.month.localeCompare(b.month))
-  
+
   // 提取图表所需数据
   const months = sortedData.map(item => item.month)
   const amounts = sortedData.map(item => item.amount)
@@ -863,35 +761,35 @@ const chartData = computed(() => {
   })
   const yoyData = sortedData.map(item => item.yoy)
   const momData = sortedData.map(item => item.mom)
-  
+
   // 计算累计总收入
   let cumulativeTotal = 0
   const cumulativeTotalData = sortedData.map(item => {
     cumulativeTotal += item.amount
     return cumulativeTotal
   })
-  
+
   // 计算每年累计收入 - 改进版本：显示每年独立累计，更有比较价值
   let cumulativeByYear = {} // 按年份存储累计值
   const cumulativeThisYearData = sortedData.map(item => {
     const itemYear = parseInt(item.month.split('-')[0])
-    
+
     // 初始化该年份的累计值
     if (!cumulativeByYear[itemYear]) {
       cumulativeByYear[itemYear] = 0
     }
-    
+
     // 累计该月份金额（每个年份独立累计）
     cumulativeByYear[itemYear] += item.amount
-    
+
     // 返回该年份的累计值，这样可以看到每年的累计趋势
     return cumulativeByYear[itemYear]
   })
-  
+
   // 计算年度收入数据和实际月份数
   const annualData = {} // 按年份存储总收入
   const annualMonthCount = {} // 按年份存储实际月份数
-  
+
   sortedData.forEach(item => {
     const year = parseInt(item.month.split('-')[0])
     if (!annualData[year]) {
@@ -899,7 +797,7 @@ const chartData = computed(() => {
       annualMonthCount[year] = 0
     }
     annualData[year] += item.amount
-    
+
     // 统计每个年份的实际月份数（使用月份作为唯一标识）
     const month = parseInt(item.month.split('-')[1])
     const monthKey = `${year}-${month}`
@@ -908,7 +806,7 @@ const chartData = computed(() => {
     }
     annualMonthCount[year].add(monthKey)
   })
-  
+
   // 计算年维度月均工资：年度总收入 / 实际月份数
   const annualAverageSalary = {} // 按年份存储月均工资
   Object.entries(annualData).forEach(([year, total]) => {
@@ -916,17 +814,17 @@ const chartData = computed(() => {
     // 避免除以0，最少按1个月计算
     annualAverageSalary[year] = monthCount > 0 ? total / monthCount : total
   })
-  
+
   // 转换为数组并按年份排序
   const annualDataArray = Object.entries(annualData)
     .map(([year, amount]) => ({ year: parseInt(year), amount }))
     .sort((a, b) => a.year - b.year)
-  
+
   // 转换年维度月均工资为数组并按年份排序
   const annualAverageSalaryArray = Object.entries(annualAverageSalary)
     .map(([year, average]) => ({ year: parseInt(year), average }))
     .sort((a, b) => a.year - b.year)
-  
+
   return {
     months,
     amounts,
@@ -943,15 +841,15 @@ const chartData = computed(() => {
 // 初始化图表
 const initChart = () => {
   if (!chartRef.value) return
-  
+
   // 销毁已有实例
   if (chartInstance.value) {
     chartInstance.value.dispose()
   }
-  
+
   // 创建新实例
   chartInstance.value = echarts.init(chartRef.value)
-  
+
   // 更新图表
   updateChart()
 }
@@ -959,27 +857,10 @@ const initChart = () => {
 // 更新图表
 const updateChart = () => {
   if (!chartInstance.value) return
-  
+
   const { months, amounts, growthData, yoyData, momData, cumulativeTotalData, cumulativeThisYearData } = chartData.value
-  
-  // 处理数据，将超出上下限的数据显示在上下限上
-  const processData = (data, min, max) => {
-    return data.map(value => {
-      if (min !== null && value < min) return parseFloat(min)
-      if (max !== null && value > max) return parseFloat(max)
-      return value
-    })
-  }
-  
-  // 应用上下限处理
-  const processedAmounts = processData(amounts, customLimits.value.salary.min, customLimits.value.salary.max)
-  const processedGrowthData = processData(growthData, customLimits.value.growth.min, customLimits.value.growth.max)
-  const processedYoyData = processData(yoyData, customLimits.value.yoy.min, customLimits.value.yoy.max)
-  const processedMomData = processData(momData, customLimits.value.mom.min, customLimits.value.mom.max)
-  const processedCumulativeTotal = processData(cumulativeTotalData, null, null) // 累计总收入不应用上下限
-  const processedCumulativeThisYear = processData(cumulativeThisYearData, null, null) // 本年累计收入不应用上下限
-  
-  // 设置y轴上下限
+
+  // 设置y轴配置
   const yAxis1 = {
     type: 'value',
     name: '金额（元）',
@@ -991,12 +872,9 @@ const updateChart = () => {
     },
     axisTick: {
       show: false
-    },
-    // 应用自定义上下限
-    min: customLimits.value.salary.min !== null ? parseFloat(customLimits.value.salary.min) : undefined,
-    max: customLimits.value.salary.max !== null ? parseFloat(customLimits.value.salary.max) : undefined
+    }
   }
-  
+
   const yAxis2 = {
     type: 'value',
     name: '增长率（%）',
@@ -1025,12 +903,9 @@ const updateChart = () => {
     axisTick: {
       show: true,
       alignWithLabel: true
-    },
-    // 应用自定义上下限
-    min: customLimits.value.yoy.min !== null ? parseFloat(customLimits.value.yoy.min) : undefined,
-    max: customLimits.value.yoy.max !== null ? parseFloat(customLimits.value.yoy.max) : undefined
+    }
   }
-  
+
   const option = {
       tooltip: {
         trigger: 'axis',
@@ -1041,23 +916,23 @@ const updateChart = () => {
         },
         formatter: function(params) {
           if (!params || params.length === 0) return ''
-          
+
           const month = params[0].axisValue || '未知月份'
           let result = `<div style="font-weight: bold; margin-bottom: 8px; font-size: 12px;">${month}</div>`
-          
+
           // 格式化显示每个系列的数据
           params.forEach(item => {
             const value = item.value
             const name = item.seriesName
             let formattedValue = value
-            
+
             // 根据系列名称格式化数据
             if (name === '同比' || name === '环比') {
               formattedValue = `${value.toFixed(2)}%`
             } else {
               formattedValue = `${value.toFixed(2)}元`
             }
-            
+
             result += `<div style="display: flex; align-items: center; margin: 2px 0; font-size: 11px;">
               <span style="display: inline-block; width: 8px; height: 8px; background-color: ${item.color}; border-radius: 50%; margin-right: 6px;"></span>
               <span>${name}: ${formattedValue}</span>
@@ -1113,7 +988,7 @@ const updateChart = () => {
         {
           name: '月薪',
           type: 'line',
-          data: processedAmounts,
+          data: amounts,
           smooth: true,
           symbol: 'none', // 移除折线上的点
           itemStyle: {
@@ -1123,7 +998,7 @@ const updateChart = () => {
         {
           name: '增长',
           type: 'bar',
-          data: processedGrowthData,
+          data: growthData,
           itemStyle: {
             color: '#ff9800'
           }
@@ -1132,7 +1007,7 @@ const updateChart = () => {
           name: '同比',
           type: 'line',
           yAxisIndex: 1,
-          data: processedYoyData,
+          data: yoyData,
           smooth: true,
           symbol: 'none', // 移除折线上的点
           itemStyle: {
@@ -1143,7 +1018,7 @@ const updateChart = () => {
           name: '环比',
           type: 'line',
           yAxisIndex: 1,
-          data: processedMomData,
+          data: momData,
           smooth: true,
           symbol: 'none', // 移除折线上的点
           itemStyle: {
@@ -1152,7 +1027,7 @@ const updateChart = () => {
         }
       ]
     }
-  
+
   chartInstance.value.setOption(option)
 }
 
@@ -1180,35 +1055,17 @@ const handleResize = () => {
   annualAverageSalaryChartInstance.value?.resize()
 }
 
-// 重置上下限设置
-const resetLimits = () => {
-  customLimits.value = {
-    salary: { min: null, max: null },
-    growth: { min: null, max: null },
-    yoy: { min: null, max: null },
-    mom: { min: null, max: null }
-  }
-  updateChart()
-}
 
-// 切换上下限设置面板
-const toggleLimitSettings = () => {
-  if (expandedNames.value.includes('limitSettings')) {
-    expandedNames.value = expandedNames.value.filter(name => name !== 'limitSettings')
-  } else {
-    expandedNames.value.push('limitSettings')
-  }
-}
 
 // 初始化面积图
 const initAreaChart = () => {
   if (!areaChartRef.value) return
-  
+
   // 销毁已有实例
   if (areaChartInstance.value) {
     areaChartInstance.value.dispose()
   }
-  
+
   areaChartInstance.value = echarts.init(areaChartRef.value)
   updateAreaChart()
 }
@@ -1216,12 +1073,12 @@ const initAreaChart = () => {
 // 初始化年度收入柱状图
 const initAnnualBarChart = () => {
   if (!annualBarChartRef.value) return
-  
+
   // 销毁已有实例
   if (annualBarChartInstance.value) {
     annualBarChartInstance.value.dispose()
   }
-  
+
   annualBarChartInstance.value = echarts.init(annualBarChartRef.value)
   updateAnnualBarChart()
 }
@@ -1229,9 +1086,9 @@ const initAnnualBarChart = () => {
 // 更新面积图
 const updateAreaChart = () => {
   if (!areaChartInstance.value) return
-  
+
   const { months, cumulativeTotalData, cumulativeThisYearData } = chartData.value
-  
+
   const option = {
         tooltip: {
           trigger: 'axis',
@@ -1242,16 +1099,16 @@ const updateAreaChart = () => {
           },
           formatter: function(params) {
             if (!params || params.length === 0) return ''
-            
+
             const month = params[0].axisValue || '未知月份'
             let result = `<div style="font-weight: bold; margin-bottom: 8px; font-size: 12px;">${month}</div>`
-            
+
             // 格式化显示每个系列的数据
             params.forEach(item => {
               const value = item.value
               const name = item.seriesName
               const formattedValue = `${value.toFixed(2)}元`
-              
+
               result += `<div style="display: flex; align-items: center; margin: 2px 0; font-size: 11px;">
                 <span style="display: inline-block; width: 8px; height: 8px; background-color: ${item.color}; border-radius: 50%; margin-right: 6px;"></span>
                 <span>${name}: ${formattedValue}</span>
@@ -1368,20 +1225,20 @@ const updateAreaChart = () => {
       }
     ]
   }
-  
+
   areaChartInstance.value.setOption(option)
 }
 
 // 更新年度收入柱状图
 const updateAnnualBarChart = () => {
   if (!annualBarChartInstance.value) return
-  
+
   const { annualData } = chartData.value
-  
+
   // 提取年度数据
   const years = annualData.map(item => item.year)
   const amounts = annualData.map(item => item.amount)
-  
+
   const option = {
         tooltip: {
           trigger: 'axis',
@@ -1485,19 +1342,19 @@ const updateAnnualBarChart = () => {
       }
     ]
   }
-  
+
   annualBarChartInstance.value.setOption(option)
 }
 
 // 初始化年维度月均工资图表
 const initAnnualAverageSalaryChart = () => {
   if (!annualAverageSalaryChartRef.value) return
-  
+
   // 销毁已有实例
   if (annualAverageSalaryChartInstance.value) {
     annualAverageSalaryChartInstance.value.dispose()
   }
-  
+
   annualAverageSalaryChartInstance.value = echarts.init(annualAverageSalaryChartRef.value)
   updateAnnualAverageSalaryChart()
 }
@@ -1505,13 +1362,13 @@ const initAnnualAverageSalaryChart = () => {
 // 更新年维度月均工资图表
 const updateAnnualAverageSalaryChart = () => {
   if (!annualAverageSalaryChartInstance.value) return
-  
+
   const { annualAverageSalary } = chartData.value
-  
+
   // 提取年维度月均工资数据
   const years = annualAverageSalary.map(item => item.year)
   const averageSalaries = annualAverageSalary.map(item => item.average)
-  
+
   const option = {
         tooltip: {
           trigger: 'axis',
@@ -1620,7 +1477,7 @@ const updateAnnualAverageSalaryChart = () => {
       }
     ]
   }
-  
+
   annualAverageSalaryChartInstance.value.setOption(option)
 }
 
@@ -1628,10 +1485,10 @@ const updateAnnualAverageSalaryChart = () => {
 onMounted(() => {
   console.log('组件挂载，加载数据')
   loadData()
-  
+
   // 初始化图表高度
   updateChartHeight()
-  
+
   // 延迟初始化图表，确保DOM已渲染
   setTimeout(() => {
     initChart()
@@ -1661,10 +1518,10 @@ const columns = [
     width: 80,
     render(row) {
       // 使用图标表示类型
-      const icon = row.type === 'salary' ? 
-        h(NIcon, { size: 20, color: '#2080f0' }, { default: () => h(CashOutline) }) : 
+      const icon = row.type === 'salary' ?
+        h(NIcon, { size: 20, color: '#2080f0' }, { default: () => h(CashOutline) }) :
         h(NIcon, { size: 20, color: '#f53f3f' }, { default: () => h(GiftOutline) })
-      return h('div', { 
+      return h('div', {
         class: 'type-icon-container',
         title: row.type === 'salary' ? '月薪' : '年终奖'
       }, [icon])
@@ -1694,10 +1551,10 @@ const columns = [
       const value = parseFloat(row.growth || 0)
       const isNegative = value < 0
       const displayValue = Math.abs(value).toFixed(2)
-      const icon = isNegative ? 
-        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
+      const icon = isNegative ?
+        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) :
         h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
-      return h('div', { 
+      return h('div', {
         class: 'growth-item',
         style: { color: isNegative ? '#18a058' : '#f53f3f' }
       }, [icon, ` ${displayValue}元`])
@@ -1711,10 +1568,10 @@ const columns = [
       const value = parseFloat(row.mom || 0)
       const isNegative = value < 0
       const displayValue = Math.abs(value).toFixed(2)
-      const icon = isNegative ? 
-        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
+      const icon = isNegative ?
+        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) :
         h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
-      return h('div', { 
+      return h('div', {
         class: 'growth-item',
         style: { color: isNegative ? '#18a058' : '#f53f3f' }
       }, [icon, ` ${displayValue}%`])
@@ -1728,10 +1585,10 @@ const columns = [
       const value = parseFloat(row.yoy || 0)
       const isNegative = value < 0
       const displayValue = Math.abs(value).toFixed(2)
-      const icon = isNegative ? 
-        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
+      const icon = isNegative ?
+        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) :
         h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
-      return h('div', { 
+      return h('div', {
         class: 'growth-item',
         style: { color: isNegative ? '#18a058' : '#f53f3f' }
       }, [icon, ` ${displayValue}%`])
@@ -2048,7 +1905,7 @@ const batchInsertRecords = async (records) => {
   if (authError || !user) throw new Error('请先登录')
 
   const recordsWithUserId = records.map(r => ({
-    ...r, 
+    ...r,
     user_id: user.id,
     record_date: formatDateForDB(r.record_date) // 确保日期格式正确
   }))
