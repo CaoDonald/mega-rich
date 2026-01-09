@@ -46,14 +46,14 @@
           placeholder="选择月份"
           class="filter-select"
       />
-      <n-button @click="applyFilters">
-        <template #icon>
-          <n-icon>
-            <SearchOutline/>
-          </n-icon>
-        </template>
-        筛选
-      </n-button>
+<!--      <n-button @click="applyFilters">-->
+<!--        <template #icon>-->
+<!--          <n-icon>-->
+<!--            <SearchOutline/>-->
+<!--          </n-icon>-->
+<!--        </template>-->
+<!--        筛选-->
+<!--      </n-button>-->
     </div>
 
     <!-- 数据列表 -->
@@ -188,17 +188,22 @@
         
         <!-- 主图表容器 -->
         <div class="chart-container">
-          <div ref="chartRef" class="chart" style="width: 100%; height: 400px;"></div>
+          <div ref="chartRef" class="chart" :style="{ width: '100%', height: chartHeight }"></div>
         </div>
         
         <!-- 面积图容器 -->
         <div class="chart-container" style="margin-top: 30px;">
-          <div ref="areaChartRef" class="chart" style="width: 100%; height: 400px;"></div>
+          <div ref="areaChartRef" class="chart" :style="{ width: '100%', height: chartHeight }"></div>
         </div>
         
         <!-- 年度收入柱状图容器 -->
         <div class="chart-container" style="margin-top: 30px;">
-          <div ref="annualBarChartRef" class="chart" style="width: 100%; height: 400px;"></div>
+          <div ref="annualBarChartRef" class="chart" :style="{ width: '100%', height: chartHeight }"></div>
+        </div>
+        
+        <!-- 年维度月均工资图表容器 -->
+        <div class="chart-container" style="margin-top: 30px;">
+          <div ref="annualAverageSalaryChartRef" class="chart" :style="{ width: '100%', height: chartHeight }"></div>
         </div>
       </n-card>
     </div>
@@ -396,7 +401,28 @@ const areaChartRef = ref(null)
 const areaChartInstance = ref(null)
 const annualBarChartRef = ref(null)
 const annualBarChartInstance = ref(null)
+const annualAverageSalaryChartRef = ref(null)
+const annualAverageSalaryChartInstance = ref(null)
 const timeRange = ref('all') // 'all', '1y', '3y', 'thisYear'
+const chartHeight = ref('400px')
+
+// 根据屏幕宽度动态调整图表高度
+const updateChartHeight = () => {
+  if (window.innerWidth < 768) {
+    chartHeight.value = '300px'
+  } else if (window.innerWidth < 480) {
+    chartHeight.value = '250px'
+  } else if (window.innerWidth < 360) {
+    chartHeight.value = '220px'
+  } else {
+    chartHeight.value = '400px'
+  }
+  
+  // 更新所有图表实例的尺寸
+  chartInstance.value?.resize()
+  areaChartInstance.value?.resize()
+  annualBarChartInstance.value?.resize()
+}
 
 // 自定义上下限状态
 const customLimits = ref({
@@ -776,19 +802,43 @@ const chartData = computed(() => {
     return cumulativeByYear[itemYear]
   })
   
-  // 计算年度收入数据
+  // 计算年度收入数据和实际月份数
   const annualData = {} // 按年份存储总收入
+  const annualMonthCount = {} // 按年份存储实际月份数
+  
   sortedData.forEach(item => {
     const year = parseInt(item.month.split('-')[0])
     if (!annualData[year]) {
       annualData[year] = 0
+      annualMonthCount[year] = 0
     }
     annualData[year] += item.amount
+    
+    // 统计每个年份的实际月份数（使用月份作为唯一标识）
+    const month = parseInt(item.month.split('-')[1])
+    const monthKey = `${year}-${month}`
+    if (!annualMonthCount[year]) {
+      annualMonthCount[year] = new Set()
+    }
+    annualMonthCount[year].add(monthKey)
+  })
+  
+  // 计算年维度月均工资：年度总收入 / 实际月份数
+  const annualAverageSalary = {} // 按年份存储月均工资
+  Object.entries(annualData).forEach(([year, total]) => {
+    const monthCount = annualMonthCount[year] ? annualMonthCount[year].size : 0
+    // 避免除以0，最少按1个月计算
+    annualAverageSalary[year] = monthCount > 0 ? total / monthCount : total
   })
   
   // 转换为数组并按年份排序
   const annualDataArray = Object.entries(annualData)
     .map(([year, amount]) => ({ year: parseInt(year), amount }))
+    .sort((a, b) => a.year - b.year)
+  
+  // 转换年维度月均工资为数组并按年份排序
+  const annualAverageSalaryArray = Object.entries(annualAverageSalary)
+    .map(([year, average]) => ({ year: parseInt(year), average }))
     .sort((a, b) => a.year - b.year)
   
   return {
@@ -799,7 +849,8 @@ const chartData = computed(() => {
     momData,
     cumulativeTotalData,
     cumulativeThisYearData,
-    annualData: annualDataArray
+    annualData: annualDataArray,
+    annualAverageSalary: annualAverageSalaryArray
   }
 })
 
@@ -848,7 +899,12 @@ const updateChart = () => {
     name: '金额（元）',
     position: 'left',
     axisLabel: {
-      formatter: '{value}'
+      formatter: '{value}',
+      fontSize: '8px',
+      margin: 4
+    },
+    axisTick: {
+      show: false
     },
     // 应用自定义上下限
     min: customLimits.value.salary.min !== null ? parseFloat(customLimits.value.salary.min) : undefined,
@@ -860,7 +916,9 @@ const updateChart = () => {
     name: '增长率（%）',
     position: 'right',
     axisLabel: {
-      formatter: '{value}%'
+      formatter: '{value}%',
+      fontSize: '8px',
+      margin: 4
     },
     // 0%位置加粗
     splitLine: {
@@ -899,7 +957,7 @@ const updateChart = () => {
           if (!params || params.length === 0) return ''
           
           const month = params[0].axisValue || '未知月份'
-          let result = `<div style="font-weight: bold; margin-bottom: 8px;">${month}</div>`
+          let result = `<div style="font-weight: bold; margin-bottom: 8px; font-size: 12px;">${month}</div>`
           
           // 格式化显示每个系列的数据
           params.forEach(item => {
@@ -914,24 +972,37 @@ const updateChart = () => {
               formattedValue = `${value.toFixed(2)}元`
             }
             
-            result += `<div style="display: flex; align-items: center; margin: 4px 0;">
-              <span style="display: inline-block; width: 10px; height: 10px; background-color: ${item.color}; border-radius: 50%; margin-right: 8px;"></span>
+            result += `<div style="display: flex; align-items: center; margin: 2px 0; font-size: 11px;">
+              <span style="display: inline-block; width: 8px; height: 8px; background-color: ${item.color}; border-radius: 50%; margin-right: 6px;"></span>
               <span>${name}: ${formattedValue}</span>
             </div>`
           })
           return result
-        }
+        },
+        padding: 8
       },
       legend: {
         data: ['月薪', '增长', '同比', '环比'],
-        top: 10,
-        left: 'center'
+        top: 30,
+        left: 'center',
+        type: 'scroll',
+        orient: 'horizontal',
+        textStyle: {
+          fontSize: '10px'
+        },
+        itemWidth: 8,
+        itemHeight: 8,
+        pageIconSize: 8,
+        pageTextStyle: {
+          fontSize: '9px'
+        },
+        pageButtonGap: 5
       },
       grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '25%',
-        top: '15%',
+        left: '1%',
+        right: '1%',
+        bottom: '10%',
+        top: '30%',
         containLabel: true
       },
       xAxis: {
@@ -939,10 +1010,13 @@ const updateChart = () => {
         boundaryGap: false,
         data: months,
         axisLabel: {
-          interval: 1,
-          rotate: 60,
-          margin: 25,
-          fontSize: 12
+          interval: 2,
+          rotate: 45,
+          margin: 8,
+          fontSize: '8px'
+        },
+        axisTick: {
+          show: false
         },
         axisLine: {
           onZero: true
@@ -1001,6 +1075,7 @@ watch(records, () => {
   updateChart()
   updateAreaChart()
   updateAnnualBarChart()
+  updateAnnualAverageSalaryChart()
 }, { deep: true })
 
 // 监听时间范围变化，更新图表
@@ -1008,6 +1083,7 @@ watch(timeRange, () => {
   updateChart()
   updateAreaChart()
   updateAnnualBarChart()
+  updateAnnualAverageSalaryChart()
 })
 
 // 监听窗口大小变化，调整图表
@@ -1015,6 +1091,7 @@ const handleResize = () => {
   chartInstance.value?.resize()
   areaChartInstance.value?.resize()
   annualBarChartInstance.value?.resize()
+  annualAverageSalaryChartInstance.value?.resize()
 }
 
 // 重置上下限设置
@@ -1070,69 +1147,90 @@ const updateAreaChart = () => {
   const { months, cumulativeTotalData, cumulativeThisYearData } = chartData.value
   
   const option = {
-    tooltip: {
-      trigger: 'axis',
-      triggerOn: 'mousemove',
-      axisPointer: {
-        type: 'cross',
-        animation: true
-      },
-      formatter: function(params) {
-        if (!params || params.length === 0) return ''
-        
-        const month = params[0].axisValue || '未知月份'
-        let result = `<div style="font-weight: bold; margin-bottom: 8px;">${month}</div>`
-        
-        // 格式化显示每个系列的数据
-        params.forEach(item => {
-          const value = item.value
-          const name = item.seriesName
-          const formattedValue = `${value.toFixed(2)}元`
-          
-          result += `<div style="display: flex; align-items: center; margin: 4px 0;">
-            <span style="display: inline-block; width: 10px; height: 10px; background-color: ${item.color}; border-radius: 50%; margin-right: 8px;"></span>
-            <span>${name}: ${formattedValue}</span>
-          </div>`
-        })
-        return result
-      }
-    },
-    legend: {
-      data: ['累计总收入', '年度累计收入'],
-      top: 10,
-      left: 'center'
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '25%',
-      top: '15%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: months,
-      axisLabel: {
-        interval: 1,
-        rotate: 60,
-        margin: 25,
-        fontSize: 12
-      },
-      axisLine: {
-        onZero: true
-      }
-    },
-    yAxis: [
-      {
-        type: 'value',
-        name: '金额（元）',
-        position: 'left',
-        axisLabel: {
-          formatter: '{value}'
-        }
-      }
-    ],
+        tooltip: {
+          trigger: 'axis',
+          triggerOn: 'mousemove',
+          axisPointer: {
+            type: 'cross',
+            animation: true
+          },
+          formatter: function(params) {
+            if (!params || params.length === 0) return ''
+            
+            const month = params[0].axisValue || '未知月份'
+            let result = `<div style="font-weight: bold; margin-bottom: 8px; font-size: 12px;">${month}</div>`
+            
+            // 格式化显示每个系列的数据
+            params.forEach(item => {
+              const value = item.value
+              const name = item.seriesName
+              const formattedValue = `${value.toFixed(2)}元`
+              
+              result += `<div style="display: flex; align-items: center; margin: 2px 0; font-size: 11px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background-color: ${item.color}; border-radius: 50%; margin-right: 6px;"></span>
+                <span>${name}: ${formattedValue}</span>
+              </div>`
+            })
+            return result
+          },
+          padding: 8
+        },
+        legend: {
+          data: ['累计总收入', '年度累计收入'],
+          top: 30,
+          left: 'center',
+          type: 'scroll',
+          orient: 'horizontal',
+          textStyle: {
+            fontSize: '10px'
+          },
+          itemWidth: 8,
+          itemHeight: 8,
+          pageIconSize: 8,
+          pageTextStyle: {
+            fontSize: '9px'
+          },
+          pageButtonGap: 5
+        },
+        grid: {
+          left: '1%',
+          right: '1%',
+          bottom: '10%',
+          top: '30%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          boundaryGap: false,
+          data: months,
+          axisLabel: {
+            interval: 2,
+            rotate: 45,
+            margin: 8,
+            fontSize: '8px'
+          },
+          axisTick: {
+            show: false
+          },
+          axisLine: {
+            onZero: true
+          }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: '金额（元）',
+            position: 'left',
+            axisLabel: {
+              formatter: '{value}',
+              fontSize: '8px',
+              margin: 4
+            },
+            axisTick: {
+              show: false
+            }
+          }
+        ],
     series: [
       {
         name: '累计总收入',
@@ -1199,41 +1297,50 @@ const updateAnnualBarChart = () => {
   const amounts = annualData.map(item => item.amount)
   
   const option = {
-    tooltip: {
-      trigger: 'axis',
-      triggerOn: 'mousemove',
-      axisPointer: {
-        type: 'shadow'
-      },
-      formatter: function(params) {
-        if (!params || params.length === 0) return ''
-        const item = params[0]
-        return `${item.name}年<br/>总收入：${item.value.toFixed(2)}元`
-      }
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '10%',
-      top: '15%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'category',
-      data: years,
-      axisLabel: {
-        interval: 0,
-        rotate: 0,
-        fontSize: 12
-      }
-    },
-    yAxis: {
-      type: 'value',
-      name: '金额（元）',
-      axisLabel: {
-        formatter: '{value}'
-      }
-    },
+        tooltip: {
+          trigger: 'axis',
+          triggerOn: 'mousemove',
+          axisPointer: {
+            type: 'shadow'
+          },
+          formatter: function(params) {
+            if (!params || params.length === 0) return ''
+            const item = params[0]
+            return `${item.name}年<br/>总收入：${item.value.toFixed(2)}元`
+          },
+          padding: 8
+        },
+        grid: {
+          left: '1%',
+          right: '1%',
+          bottom: '10%',
+          top: '30%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: years,
+          axisLabel: {
+            interval: 0,
+            rotate: 0,
+            fontSize: '8px'
+          },
+          axisTick: {
+            show: false
+          }
+        },
+        yAxis: {
+          type: 'value',
+          name: '金额（元）',
+          axisLabel: {
+            formatter: '{value}',
+            fontSize: '8px',
+            margin: 4
+          },
+          axisTick: {
+            show: false
+          }
+        },
     series: [
       {
         name: '年度收入',
@@ -1296,17 +1403,157 @@ const updateAnnualBarChart = () => {
   annualBarChartInstance.value.setOption(option)
 }
 
+// 初始化年维度月均工资图表
+const initAnnualAverageSalaryChart = () => {
+  if (!annualAverageSalaryChartRef.value) return
+  
+  // 销毁已有实例
+  if (annualAverageSalaryChartInstance.value) {
+    annualAverageSalaryChartInstance.value.dispose()
+  }
+  
+  annualAverageSalaryChartInstance.value = echarts.init(annualAverageSalaryChartRef.value)
+  updateAnnualAverageSalaryChart()
+}
+
+// 更新年维度月均工资图表
+const updateAnnualAverageSalaryChart = () => {
+  if (!annualAverageSalaryChartInstance.value) return
+  
+  const { annualAverageSalary } = chartData.value
+  
+  // 提取年维度月均工资数据
+  const years = annualAverageSalary.map(item => item.year)
+  const averageSalaries = annualAverageSalary.map(item => item.average)
+  
+  const option = {
+        tooltip: {
+          trigger: 'axis',
+          triggerOn: 'mousemove',
+          axisPointer: {
+            type: 'shadow'
+          },
+          formatter: function(params) {
+            if (!params || params.length === 0) return ''
+            let result = `${params[0].name}年<br/>`
+            params.forEach(item => {
+              const value = item.value
+              const name = item.seriesName
+              result += `${name}：${value.toFixed(2)}元<br/>`
+            })
+            return result
+          },
+          padding: 8
+        },
+        grid: {
+          left: '1%',
+          right: '1%',
+          bottom: '10%',
+          top: '30%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: years,
+          axisLabel: {
+            interval: 0,
+            rotate: 0,
+            fontSize: '8px'
+          },
+          axisTick: {
+            show: false
+          }
+        },
+        yAxis: {
+          type: 'value',
+          name: '金额（元）',
+          axisLabel: {
+            formatter: '{value}',
+            fontSize: '8px',
+            margin: 4
+          },
+          axisTick: {
+            show: false
+          }
+        },
+    series: [
+      {
+        name: '月均工资',
+        type: 'bar',
+        data: averageSalaries,
+        itemStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: '#ff9800' },
+              { offset: 1, color: '#f57c00' }
+            ]
+          }
+        },
+        emphasis: {
+          itemStyle: {
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: '#67c23a' },
+                { offset: 1, color: '#85ce61' }
+              ]
+            }
+          }
+        }
+      },
+      {
+        name: '月均工资趋势',
+        type: 'line',
+        data: averageSalaries,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: {
+          color: '#3b82f6',
+          width: 2
+        },
+        itemStyle: {
+          color: '#3b82f6',
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        emphasis: {
+          itemStyle: {
+            symbolSize: 8
+          }
+        }
+      }
+    ]
+  }
+  
+  annualAverageSalaryChartInstance.value.setOption(option)
+}
+
 // 组件挂载时初始化
 onMounted(() => {
   console.log('组件挂载，加载数据')
   loadData()
+  
+  // 初始化图表高度
+  updateChartHeight()
   
   // 延迟初始化图表，确保DOM已渲染
   setTimeout(() => {
     initChart()
     initAreaChart()
     initAnnualBarChart()
+    initAnnualAverageSalaryChart()
     window.addEventListener('resize', handleResize)
+    window.addEventListener('resize', updateChartHeight)
   }, 100)
 })
 
@@ -1315,7 +1562,9 @@ const cleanup = () => {
   chartInstance.value?.dispose()
   areaChartInstance.value?.dispose()
   annualBarChartInstance.value?.dispose()
+  annualAverageSalaryChartInstance.value?.dispose()
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('resize', updateChartHeight)
 }
 
 // 表格列配置（核心：操作列用render函数实现）
@@ -1750,41 +1999,71 @@ const downloadTemplate = () => {
 .salary-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 30px 20px;
+  padding: 20px 10px;
   min-height: calc(100vh - 120px);
 }
 
 .salary-container h2 {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  margin: 0 0 30px 0;
+  margin: 0 0 20px 0;
   color: #333;
   text-align: center;
 }
 
 .action-buttons {
   display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
+  gap: 10px;
+  margin-bottom: 20px;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .filter-section {
   display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
+  gap: 10px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   align-items: center;
-  padding: 20px;
+  padding: 15px;
   background-color: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #e9ecef;
 }
 
 .filter-select {
-  min-width: 180px;
+  min-width: 150px;
   flex: 1;
   max-width: 250px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .salary-container {
+    padding: 15px 8px;
+  }
+  
+  .salary-container h2 {
+    font-size: 1.25rem;
+    margin-bottom: 15px;
+  }
+  
+  .action-buttons {
+    gap: 8px;
+    margin-bottom: 15px;
+    justify-content: center;
+  }
+  
+  .filter-section {
+    gap: 8px;
+    margin-bottom: 15px;
+    padding: 12px;
+  }
+  
+  .filter-select {
+    min-width: 120px;
+    max-width: 100%;
+  }
 }
 
 .records-list {
@@ -1819,14 +2098,16 @@ const downloadTemplate = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #e9ecef;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .stats-header h3 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #333;
 }
@@ -1834,73 +2115,164 @@ const downloadTemplate = () => {
 .time-range-selector {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .time-range-selector span {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #666;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 25px;
-  margin-bottom: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
 }
 
 .chart-container {
-  margin-top: 30px;
-  padding-top: 20px;
+  margin-bottom: 20px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .stats-header {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    gap: 8px;
+  }
+  
+  .stats-header h3 {
+    font-size: 1rem;
+    width: 100%;
+    text-align: center;
+  }
+  
+  .time-range-selector {
+    width: 100%;
+    justify-content: center;
+    gap: 5px;
+  }
+  
+  .time-range-selector span {
+    font-size: 0.75rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .chart-container {
+    margin-bottom: 15px;
+  }
+  
+  /* 调整图表容器高度 */
+  .chart {
+    height: 300px !important;
+  }
+}
+
+.limit-settings-form {
+  margin-top: 15px;
+  padding-top: 15px;
   border-top: 1px solid #e9ecef;
 }
 
 /* 上下限设置表单样式 */
 :deep(.limit-settings-form) {
   background-color: #f8f9fa;
-  padding: 20px;
+  padding: 15px;
   border-radius: 8px;
   border: 1px solid #e9ecef;
+  overflow-x: auto;
 }
 
 :deep(.limit-item) {
   margin-bottom: 15px;
   display: flex;
-  align-items: center;
-  gap: 20px;
+  align-items: flex-start;
+  gap: 15px;
+  flex-wrap: wrap;
 }
 
 :deep(.limit-item h4) {
-  margin: 0;
+  margin: 0 0 8px 0;
   font-size: 0.95rem;
   font-weight: 500;
   color: #333;
-  width: 100px;
+  width: 80px;
   flex-shrink: 0;
+  min-width: 80px;
 }
 
 :deep(.limit-inputs) {
   display: flex;
   gap: 10px;
   align-items: center;
+  flex: 1;
+  min-width: 200px;
 }
 
 :deep(.limit-actions) {
-  margin-top: 20px;
+  margin-top: 15px;
   display: flex;
   gap: 10px;
-  justify-content: flex-end;
+  justify-content: center;
   padding-top: 15px;
   border-top: 1px solid #e9ecef;
+  flex-wrap: wrap;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  :deep(.limit-settings-form) {
+    padding: 12px;
+  }
+  
+  :deep(.limit-item) {
+    margin-bottom: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  :deep(.limit-item h4) {
+    margin: 0 0 5px 0;
+    width: auto;
+    min-width: auto;
+  }
+  
+  :deep(.limit-inputs) {
+    gap: 8px;
+    min-width: auto;
+  }
+  
+  :deep(.limit-actions) {
+    margin-top: 12px;
+    padding-top: 12px;
+    gap: 8px;
+  }
 }
 
 .stat-item {
   text-align: center;
-  padding: 25px;
+  padding: 20px 15px;
   background-color: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #e9ecef;
   transition: all 0.3s ease;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .stat-item {
+    padding: 15px 10px;
+  }
 }
 
 .batch-import-container {
