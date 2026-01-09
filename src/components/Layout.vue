@@ -116,16 +116,74 @@ const handleDropdownSelect = (key) => {
   }
 }
 
+// 解析URL参数
+const parseUrlParams = () => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const params = {}
+  for (const [key, value] of urlParams.entries()) {
+    params[key] = value
+  }
+  return params
+}
+
+// 处理回调
+const handleCallback = async () => {
+  const params = parseUrlParams()
+  
+  // 检查是否有密码重置相关参数
+  if (params.type === 'recovery' && params.access_token && params.refresh_token) {
+    // 密码重置场景
+    const { data, error } = await supabase.auth.getSession()
+    if (data.session) {
+      session.value = data.session
+      loadUser(data.session.user)
+      navigateTo('password-reset')
+    }
+  } else if (params.type === 'email_change' && params.access_token) {
+    // 邮箱更改确认场景
+    const { data, error } = await supabase.auth.getSession()
+    if (data.session) {
+      session.value = data.session
+      loadUser(data.session.user)
+      // 可以添加邮箱更改成功的提示
+    }
+  } else if (params.type === 'signup' && params.access_token) {
+    // 注册成功场景
+    const { data, error } = await supabase.auth.getSession()
+    if (data.session) {
+      session.value = data.session
+      loadUser(data.session.user)
+      navigateTo('home')
+    }
+  }
+}
+
 onMounted(async () => {
   const {data,error} = await supabase.auth.getSession()
   console.log('data',data)
   if (data.session) {
     session.value = data.session
-    await loadUser(data.session.user)
+    loadUser(data.session.user)
   }
+  
+  // 检查URL是否包含回调参数
+  handleCallback()
 
-supabase.auth.onAuthStateChange(async (event, session) => {
+  supabase.auth.onAuthStateChange(async (event, session) => {
     console.log('onAuthStateChange', event, session)
+    if (event === 'PASSWORD_RECOVERY') {
+      // 密码重置成功
+      session.value = session
+      loadUser(session.user)
+      navigateTo('password-reset')
+    } else if (event === 'SIGNED_IN') {
+      // 用户登录成功
+      session.value = session
+      loadUser(session.user)
+    } else if (event === 'SIGNED_OUT') {
+      // 用户登出
+      avatarSrc.value = ''
+    }
   })
 })
 
