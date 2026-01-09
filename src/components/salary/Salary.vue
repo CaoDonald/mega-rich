@@ -630,6 +630,92 @@ const averageAnnualSalary = computed(() => {
   return actualYearCount === 0 ? 0 : (total / actualYearCount).toFixed(2)
 })
 
+const commonChartConfig = {
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: {
+      type: 'cross',
+      label: {
+        backgroundColor: '#6a7985',
+        fontSize: '11px',
+        padding: [5, 8],
+        // 给坐标轴指示器标签也提升层级
+        zlevel: 200,
+        // 确保标签不被裁剪
+        overflow: 'none'
+      },
+      // 提升坐标轴指示器本身的层级
+      zlevel: 200
+    },
+    triggerOn: 'click',
+    padding: 10,
+    // 进一步提高 zlevel 数值（避开其他元素的层级冲突）
+    zlevel: 200,
+    // 开启边界约束
+    confine: true,
+    // 取消挂载到body
+    appendToBody: false,
+    textStyle: {
+      fontSize: '11px',
+      zlevel: 200
+    }
+  },
+  legend: {
+    top: 30,
+    left: 'center',
+    type: 'scroll',
+    orient: 'horizontal',
+    textStyle: {
+      fontSize: '8px'
+    },
+    itemWidth: 8,
+    itemHeight: 8,
+    pageIconSize: 8,
+    pageTextStyle: {
+      fontSize: '9px'
+    },
+    pageButtonGap: 5,
+    zlevel: 10
+  },
+  grid: {
+    left: '8%',
+    right: '8%',
+    bottom: '10%',
+    top: '30%',
+    containLabel: true,
+    zlevel: 10
+  },
+  dataZoom: {
+    type: 'inside',
+    start: 0,
+    end: 100,
+    zlevel: 10
+  },
+  xAxis: {
+    axisLabel: {
+      fontSize: '10px',
+      margin: 8
+    },
+    axisTick: {
+      show: false,
+      zlevel: 10
+    },
+    zlevel: 10
+  },
+  yAxis: {
+    axisLabel: {
+      fontSize: '8px',
+      margin: 4,
+      show: false
+    },
+    axisTick: {
+      show: false,
+      zlevel: 10
+    },
+    zlevel: 10
+  }
+}
+
 // 图表数据处理
 const chartData = computed(() => {
   // 首先获取所有原始记录
@@ -2070,13 +2156,10 @@ const downloadTemplate = () => {
   border: 1px solid #e9ecef;
 }
 
-/* 强制显示操作列按钮 */
-:deep(.actions-cell) {
-  display: flex !important;
-  align-items: center;
+.actions-cell {
+  display: flex;
+  gap: 8px;
   justify-content: center;
-  gap: 4px !important;
-  width: 100% !important;
 }
 
 :deep(.actions-cell .n-button) {
@@ -2328,11 +2411,6 @@ const downloadTemplate = () => {
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 15px;
-  }
-
-  :deep(.actions-cell) {
-    flex-direction: column;
-    gap: 5px !important;
   }
 }
 /* 操作列容器 */

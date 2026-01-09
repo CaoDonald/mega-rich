@@ -1,214 +1,243 @@
 <template>
   <div class="balance-container">
     <h2>结余管理</h2>
-    
+
     <!-- 操作按钮 -->
     <div class="action-buttons">
       <n-button type="primary" @click="showAddItemModal = true">
         <template #icon>
-          <n-icon><AddOutline /></n-icon>
+          <n-icon>
+            <AddOutline/>
+          </n-icon>
         </template>
         新增资金条目
       </n-button>
       <n-button type="primary" @click="showBatchImportModal = true">
         <template #icon>
-          <n-icon><CloudUploadOutline /></n-icon>
+          <n-icon>
+            <CloudUploadOutline/>
+          </n-icon>
         </template>
         批量导入
       </n-button>
       <n-button @click="showCategoryManagerModal = true">
         <template #icon>
-          <n-icon><ListOutline /></n-icon>
+          <n-icon>
+            <ListOutline/>
+          </n-icon>
         </template>
         管理分类
       </n-button>
       <n-button @click="refreshData">
         <template #icon>
-          <n-icon><RefreshOutline /></n-icon>
+          <n-icon>
+            <RefreshOutline/>
+          </n-icon>
         </template>
         刷新数据
       </n-button>
     </div>
-    
+
     <!-- 数据筛选 -->
     <div class="filter-section">
       <n-select
-        v-model:value="selectedCategory"
-        placeholder="选择一级分类"
-        :options="categoryOptions"
-        class="filter-select"
-        @update:value="handleCategoryChange"
+          clearable
+          v-model:value="selectedCategory"
+          placeholder="选择一级分类"
+          :options="categoryOptions"
+          class="filter-select"
+          @update:value="handleCategoryChange"
       />
       <n-select
-        v-model:value="selectedSubcategory"
-        placeholder="选择二级分类"
-        :options="subcategoryOptions"
-        class="filter-select"
-        :disabled="!selectedCategory"
+          clearable
+          v-model:value="selectedSubcategory"
+          placeholder="选择二级分类"
+          :options="subcategoryOptions"
+          class="filter-select"
+          :disabled="!selectedCategory"
       />
       <n-date-picker
-        v-model:value="selectedDate"
-        type="month"
-        placeholder="选择月份"
-        class="filter-select"
+          clearable
+          v-model:value="selectedDate"
+          type="month"
+          placeholder="选择月份"
+          class="filter-select"
       />
-      <n-button @click="resetFilters">
-        <template #icon>
-          <n-icon><RefreshOutline /></n-icon>
-        </template>
-        重置
-      </n-button>
     </div>
-    
+
     <!-- 资金条目列表 -->
     <div class="items-list">
       <n-card size="small">
         <n-data-table
-          :columns="columns"
-          :data="itemsWithGrowthStats"
-          :pagination="{ pageSize: 20 }"
-          :loading="loading"
-           :row-key="row => row.id"
+            :columns="columns"
+            :data="itemsWithGrowthStats"
+            :pagination="{ pageSize: 20 }"
+            :loading="loading"
+            :row-key="row => row.id"
         />
       </n-card>
     </div>
-    
+
     <!-- 统计信息 -->
     <div class="statistics-section">
       <n-card size="small">
         <h3>统计信息</h3>
         <div class="stats-grid">
           <div class="stat-item">
-            <n-statistic label="广义金额" :value="latestMonthStats.broadAmount" suffix="元" />
+            <n-statistic label="广义金额" :value="latestMonthStats.broadAmount" suffix="元"/>
           </div>
           <div class="stat-item">
-            <n-statistic label="可支配金额" :value="latestMonthStats.disposableAmount" suffix="元" />
+            <n-statistic label="可支配金额" :value="latestMonthStats.disposableAmount" suffix="元"/>
           </div>
           <div class="stat-item">
-            <n-statistic 
-              label="广义金额增长" 
-              :value="latestMonthStats.broadGrowth" 
-              suffix="元"
-              :value-style="{ color: latestMonthStats.broadGrowth >= 0 ? '#f53f3f' : '#18a058' }"
+            <n-statistic
+                label="广义金额增长"
+                :value="latestMonthStats.broadGrowth"
+                suffix="元"
+                :value-style="{ color: latestMonthStats.broadGrowth >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
-                <n-icon v-if="latestMonthStats.broadGrowth > 0"><TrendingUpOutline /></n-icon>
-                <n-icon v-else-if="latestMonthStats.broadGrowth < 0"><TrendingDownOutline /></n-icon>
+                <n-icon v-if="latestMonthStats.broadGrowth > 0">
+                  <TrendingUpOutline/>
+                </n-icon>
+                <n-icon v-else-if="latestMonthStats.broadGrowth < 0">
+                  <TrendingDownOutline/>
+                </n-icon>
               </template>
             </n-statistic>
           </div>
           <div class="stat-item">
-            <n-statistic 
-              label="广义金额环比" 
-              :value="latestMonthStats.broadGrowthRate" 
-              suffix="%"
-              :value-style="{ color: latestMonthStats.broadGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
+            <n-statistic
+                label="广义金额环比"
+                :value="latestMonthStats.broadGrowthRate"
+                suffix="%"
+                :value-style="{ color: latestMonthStats.broadGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
-                <n-icon v-if="latestMonthStats.broadGrowthRate > 0"><TrendingUpOutline /></n-icon>
-                <n-icon v-else-if="latestMonthStats.broadGrowthRate < 0"><TrendingDownOutline /></n-icon>
+                <n-icon v-if="latestMonthStats.broadGrowthRate > 0">
+                  <TrendingUpOutline/>
+                </n-icon>
+                <n-icon v-else-if="latestMonthStats.broadGrowthRate < 0">
+                  <TrendingDownOutline/>
+                </n-icon>
               </template>
             </n-statistic>
           </div>
           <div class="stat-item">
-            <n-statistic 
-              label="广义金额同比" 
-              :value="latestMonthStats.broadYoyGrowthRate" 
-              suffix="%"
-              :value-style="{ color: latestMonthStats.broadYoyGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
+            <n-statistic
+                label="广义金额同比"
+                :value="latestMonthStats.broadYoyGrowthRate"
+                suffix="%"
+                :value-style="{ color: latestMonthStats.broadYoyGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
-                <n-icon v-if="latestMonthStats.broadYoyGrowthRate > 0"><TrendingUpOutline /></n-icon>
-                <n-icon v-else-if="latestMonthStats.broadYoyGrowthRate < 0"><TrendingDownOutline /></n-icon>
+                <n-icon v-if="latestMonthStats.broadYoyGrowthRate > 0">
+                  <TrendingUpOutline/>
+                </n-icon>
+                <n-icon v-else-if="latestMonthStats.broadYoyGrowthRate < 0">
+                  <TrendingDownOutline/>
+                </n-icon>
               </template>
             </n-statistic>
           </div>
           <div class="stat-item">
-            <n-statistic 
-              label="可支配金额增长" 
-              :value="latestMonthStats.disposableGrowth" 
-              suffix="元"
-              :value-style="{ color: latestMonthStats.disposableGrowth >= 0 ? '#f53f3f' : '#18a058' }"
+            <n-statistic
+                label="可支配金额增长"
+                :value="latestMonthStats.disposableGrowth"
+                suffix="元"
+                :value-style="{ color: latestMonthStats.disposableGrowth >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
-                <n-icon v-if="latestMonthStats.disposableGrowth > 0"><TrendingUpOutline /></n-icon>
-                <n-icon v-else-if="latestMonthStats.disposableGrowth < 0"><TrendingDownOutline /></n-icon>
+                <n-icon v-if="latestMonthStats.disposableGrowth > 0">
+                  <TrendingUpOutline/>
+                </n-icon>
+                <n-icon v-else-if="latestMonthStats.disposableGrowth < 0">
+                  <TrendingDownOutline/>
+                </n-icon>
               </template>
             </n-statistic>
           </div>
           <div class="stat-item">
-            <n-statistic 
-              label="可支配金额环比" 
-              :value="latestMonthStats.disposableGrowthRate" 
-              suffix="%"
-              :value-style="{ color: latestMonthStats.disposableGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
+            <n-statistic
+                label="可支配金额环比"
+                :value="latestMonthStats.disposableGrowthRate"
+                suffix="%"
+                :value-style="{ color: latestMonthStats.disposableGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
-                <n-icon v-if="latestMonthStats.disposableGrowthRate > 0"><TrendingUpOutline /></n-icon>
-                <n-icon v-else-if="latestMonthStats.disposableGrowthRate < 0"><TrendingDownOutline /></n-icon>
+                <n-icon v-if="latestMonthStats.disposableGrowthRate > 0">
+                  <TrendingUpOutline/>
+                </n-icon>
+                <n-icon v-else-if="latestMonthStats.disposableGrowthRate < 0">
+                  <TrendingDownOutline/>
+                </n-icon>
               </template>
             </n-statistic>
           </div>
           <div class="stat-item">
-            <n-statistic 
-              label="可支配金额同比" 
-              :value="latestMonthStats.disposableYoyGrowthRate" 
-              suffix="%"
-              :value-style="{ color: latestMonthStats.disposableYoyGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
+            <n-statistic
+                label="可支配金额同比"
+                :value="latestMonthStats.disposableYoyGrowthRate"
+                suffix="%"
+                :value-style="{ color: latestMonthStats.disposableYoyGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
-                <n-icon v-if="latestMonthStats.disposableYoyGrowthRate > 0"><TrendingUpOutline /></n-icon>
-                <n-icon v-else-if="latestMonthStats.disposableYoyGrowthRate < 0"><TrendingDownOutline /></n-icon>
+                <n-icon v-if="latestMonthStats.disposableYoyGrowthRate > 0">
+                  <TrendingUpOutline/>
+                </n-icon>
+                <n-icon v-else-if="latestMonthStats.disposableYoyGrowthRate < 0">
+                  <TrendingDownOutline/>
+                </n-icon>
               </template>
             </n-statistic>
           </div>
         </div>
       </n-card>
     </div>
-    
+
     <!-- 广义金额和可支配金额表格 -->
     <div class="amounts-table-section">
       <n-card size="small">
         <h3>广义金额与可支配金额统计</h3>
         <n-data-table
-          :columns="statsColumns"
-          :data="dateGroupedStats"
-          :pagination="{ pageSize: 10 }"
-          :row-key="row => row.date"
-          :loading="loading"
+            :columns="statsColumns"
+            :data="dateGroupedStats"
+            :pagination="{ pageSize: 10 }"
+            :row-key="row => row.date"
+            :loading="loading"
         />
       </n-card>
     </div>
-    
+
     <!-- 折线图 -->
     <div class="chart-section">
       <n-card size="small">
         <v-chart
-          :option="lineChartOption"
-          :style="{ height: chartHeight, width: '100%' }"
-          @click="handleChartClick"
+            :option="lineChartOption"
+            :style="{ height: chartHeight, width: '100%' }"
+            @click="handleChartClick"
         />
       </n-card>
     </div>
-    
+
     <!-- 一级分类资金变化趋势 -->
     <div class="chart-section">
       <n-card size="small">
         <v-chart
-          :option="lineChartCategoryOption"
-          :style="{ height: chartHeight, width: '100%' }"
-          @click="handleChartClick"
+            :option="lineChartCategoryOption"
+            :style="{ height: chartHeight, width: '100%' }"
+            @click="handleChartClick"
         />
       </n-card>
     </div>
-    
+
     <!-- 面积图 -->
     <div class="chart-section">
       <n-card size="small">
         <v-chart
-          :option="areaChartOption"
-          :style="{ height: chartHeight, width: '100%' }"
-          @click="handleChartClick"
+            :option="areaChartOption"
+            :style="{ height: chartHeight, width: '100%' }"
+            @click="handleChartClick"
         />
       </n-card>
     </div>
@@ -217,84 +246,84 @@
     <div class="chart-section">
       <n-card size="small">
         <v-chart
-          :option="annualBarChartOption"
-          :style="{ height: chartHeight, width: '100%' }"
-          @click="handleChartClick"
+            :option="annualBarChartOption"
+            :style="{ height: chartHeight, width: '100%' }"
+            @click="handleChartClick"
         />
       </n-card>
     </div>
-    
+
     <!-- 新增资金条目弹窗 -->
     <n-modal
-      v-model:show="showAddItemModal"
-      title="新增资金条目"
-      preset="dialog"
-      :destroy-on-close="true"
-      width="auto"
-      :min-width="300"
-      max-width="95vw"
-      :style="{ maxHeight: '90vh', overflow: 'auto' }"
+        v-model:show="showAddItemModal"
+        title="新增资金条目"
+        preset="dialog"
+        :destroy-on-close="true"
+        width="auto"
+        :min-width="300"
+        max-width="95vw"
+        :style="{ maxHeight: '90vh', overflow: 'auto' }"
     >
       <AddEditItemForm
-        :categories="categories"
-        :subcategories="subcategories"
-        @submit="handleAddItem"
-        @cancel="showAddItemModal = false"
+          :categories="categories"
+          :subcategories="subcategories"
+          @submit="handleAddItem"
+          @cancel="showAddItemModal = false"
       />
     </n-modal>
-    
+
     <!-- 编辑资金条目弹窗 -->
     <n-modal
-      v-model:show="showEditItemModal"
-      title="编辑资金条目"
-      preset="dialog"
-      :destroy-on-close="true"
-      width="auto"
-      :min-width="300"
-      max-width="95vw"
-      :style="{ maxHeight: '90vh', overflow: 'auto' }"
+        v-model:show="showEditItemModal"
+        title="编辑资金条目"
+        preset="dialog"
+        :destroy-on-close="true"
+        width="auto"
+        :min-width="300"
+        max-width="95vw"
+        :style="{ maxHeight: '90vh', overflow: 'auto' }"
     >
       <AddEditItemForm
-        v-if="editingItem"
-        :categories="categories"
-        :subcategories="subcategories"
-        :item="editingItem"
-        @submit="handleUpdateItem"
-        @cancel="showEditItemModal = false"
+          v-if="editingItem"
+          :categories="categories"
+          :subcategories="subcategories"
+          :item="editingItem"
+          @submit="handleUpdateItem"
+          @cancel="showEditItemModal = false"
       />
     </n-modal>
-    
+
     <!-- 查看资金条目详情弹窗 -->
     <n-modal
-      v-model:show="showViewItemModal"
-      title="资金条目详情"
-      preset="dialog"
-      :destroy-on-close="true"
-      width="auto"
-      :min-width="300"
-      max-width="95vw"
-      :style="{ maxHeight: '90vh', overflow: 'auto' }"
+        v-model:show="showViewItemModal"
+        title="资金条目详情"
+        preset="dialog"
+        :destroy-on-close="true"
+        width="auto"
+        :min-width="300"
+        max-width="95vw"
+        :style="{ maxHeight: '90vh', overflow: 'auto' }"
     >
       <ItemDetail
-        v-if="viewingItem"
-        :item="viewingItem"
-        :categories="categories"
-        :subcategories="subcategories"
-        @close="showViewItemModal = false"
+          v-if="viewingItem"
+          :item="viewingItem"
+          :categories="categories"
+          :subcategories="subcategories"
+          @close="showViewItemModal = false"
       />
     </n-modal>
-    
+
     <!-- 删除确认弹窗 -->
     <n-modal
-      v-model:show="showDeleteConfirm"
-      title="删除确认"
-      preset="dialog"
-      negative-text="取消"
-      positive-text="删除"
-      @positive-click="confirmDelete"
-      width="auto"
-      :min-width="280"
-      max-width="90vw"
+        v-model:show="showDeleteConfirm"
+        title="删除确认"
+        preset="dialog"
+        negative-text="取消"
+        positive-text="删除"
+        @positive-click="confirmDelete"
+        width="auto"
+        :min-width="280"
+        max-width="90vw"
     >
       <div class="delete-confirm-content">
         <p>确定要删除这条资金条目吗？</p>
@@ -302,36 +331,36 @@
         <p class="item-info">日期：{{ deletingItem?.record_date }}</p>
       </div>
     </n-modal>
-    
+
     <!-- 分类管理弹窗 -->
     <n-modal
-      v-model:show="showCategoryManagerModal"
-      title="分类管理"
-      preset="dialog"
-      :destroy-on-close="true"
-      width="auto"
-      :min-width="300"
-      max-width="95vw"
-      :style="{ maxHeight: '90vh', overflow: 'auto' }"
+        v-model:show="showCategoryManagerModal"
+        title="分类管理"
+        preset="dialog"
+        :destroy-on-close="true"
+        width="auto"
+        :min-width="300"
+        max-width="95vw"
+        :style="{ maxHeight: '90vh', overflow: 'auto' }"
     >
       <CategoryManagerModal
-        :primary-categories="categories"
-        :secondary-categories="subcategories"
-        @update:primary-categories="handlePrimaryCategoriesUpdate"
-        @update:secondary-categories="handleSecondaryCategoriesUpdate"
+          :primary-categories="categories"
+          :secondary-categories="subcategories"
+          @update:primary-categories="handlePrimaryCategoriesUpdate"
+          @update:secondary-categories="handleSecondaryCategoriesUpdate"
       />
     </n-modal>
-    
+
     <!-- 批量导入弹窗 -->
     <n-modal
-      v-model:show="showBatchImportModal"
-      title="批量导入资金记录"
-      preset="dialog"
-      :destroy-on-close="true"
-      width="auto"
-      :min-width="300"
-      max-width="95vw"
-      :style="{ maxHeight: '90vh', overflow: 'auto' }"
+        v-model:show="showBatchImportModal"
+        title="批量导入资金记录"
+        preset="dialog"
+        :destroy-on-close="true"
+        width="auto"
+        :min-width="300"
+        max-width="95vw"
+        :style="{ maxHeight: '90vh', overflow: 'auto' }"
     >
       <div class="batch-import-container">
         <div class="import-info">
@@ -346,33 +375,37 @@
         </div>
         <div class="import-actions">
           <input
-            ref="fileInputRef"
-            type="file"
-            accept=".csv,.xlsx,.xls"
-            style="display: none"
-            @change="handleFileChange"
+              ref="fileInputRef"
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              style="display: none"
+              @change="handleFileChange"
           />
           <n-button
-            type="primary"
-            size="large"
-            block
-            @click="triggerFileInput"
-            :loading="importing"
+              type="primary"
+              size="large"
+              block
+              @click="triggerFileInput"
+              :loading="importing"
           >
             <template #icon>
-              <n-icon><CloudUploadOutline /></n-icon>
+              <n-icon>
+                <CloudUploadOutline/>
+              </n-icon>
             </template>
             {{ importing ? '解析中...' : '选择CSV/Excel文件' }}
           </n-button>
           <n-button
-            type="default"
-            size="large"
-            block
-            @click="downloadTemplate"
-            style="margin-top: 12px"
+              type="default"
+              size="large"
+              block
+              @click="downloadTemplate"
+              style="margin-top: 12px"
           >
             <template #icon>
-              <n-icon><CloudDownloadOutline /></n-icon>
+              <n-icon>
+                <CloudDownloadOutline/>
+              </n-icon>
             </template>
             下载Excel模板
           </n-button>
@@ -382,11 +415,11 @@
         </div>
         <div v-if="importResult" class="import-result">
           <n-alert
-            :type="importResult.success ? 'success' : 'error'"
-            :title="importResult.success ? '导入成功' : '导入失败'"
-            :description="importResult.message"
-            show-icon
-            class="alert-with-icon"
+              :type="importResult.success ? 'success' : 'error'"
+              :title="importResult.success ? '导入成功' : '导入失败'"
+              :description="importResult.message"
+              show-icon
+              class="alert-with-icon"
           />
         </div>
       </div>
@@ -395,12 +428,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, h } from 'vue'
-import { supabase } from '../../supabase.js'
-import { useMessage, NIcon, NButton } from 'naive-ui'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart, BarChart } from 'echarts/charts'
+import {ref, onMounted, computed, watch, h} from 'vue'
+import {supabase} from '../../supabase.js'
+import {useMessage, NIcon, NButton} from 'naive-ui'
+import {use} from 'echarts/core'
+import {CanvasRenderer} from 'echarts/renderers'
+import {LineChart, BarChart} from 'echarts/charts'
 import {
   TitleComponent,
   TooltipComponent,
@@ -460,12 +493,12 @@ const selectedTimeRange = ref('all')
 
 // 时间范围选项
 const timeRangeOptions = [
-  { label: '全部', value: 'all' },
-  { label: '今年', value: 'this_year' },
-  { label: '上一年', value: 'last_year' },
-  { label: '近一年', value: 'last_12_months' },
-  { label: '上三年', value: 'last_3_years' },
-  { label: '近三年', value: 'last_36_months' }
+  {label: '全部', value: 'all'},
+  {label: '今年', value: 'this_year'},
+  {label: '上一年', value: 'last_year'},
+  {label: '近一年', value: 'last_12_months'},
+  {label: '上三年', value: 'last_3_years'},
+  {label: '近三年', value: 'last_36_months'}
 ]
 
 // 弹窗状态
@@ -595,10 +628,10 @@ const commonChartConfig = {
 const timeFilteredMonthlyStats = computed(() => {
   // 先根据时间范围筛选原始条目
   const filtered = filterByTimeRange(items.value, selectedTimeRange.value)
-  
+
   // 按月份和二级分类分组，每个分组只保留最新的一条记录
   const monthlySubcategoryData = new Map()
-  
+
   // 遍历所有条目，按月份和二级分类分组
   filtered.forEach(item => {
     const recordDate = new Date(item.record_date)
@@ -606,7 +639,7 @@ const timeFilteredMonthlyStats = computed(() => {
     const month = recordDate.getMonth()
     const subcategoryId = item.subcategory_id
     const key = `${year}-${month}-${subcategoryId}`
-    
+
     // 检查是否已有该月份该二级分类的数据
     if (!monthlySubcategoryData.has(key)) {
       monthlySubcategoryData.set(key, item)
@@ -619,20 +652,20 @@ const timeFilteredMonthlyStats = computed(() => {
       }
     }
   })
-  
+
   // 将筛选后的条目重新按月份分组
   const monthlyData = new Map()
-  
+
   Array.from(monthlySubcategoryData.values()).forEach(item => {
     const recordDate = new Date(item.record_date)
     const year = recordDate.getFullYear()
     const month = recordDate.getMonth()
     const key = `${year}-${month}`
-    
+
     if (!monthlyData.has(key)) {
-      monthlyData.set(key, { amount: 0, count: 0, items: [] })
+      monthlyData.set(key, {amount: 0, count: 0, items: []})
     }
-    
+
     const monthData = monthlyData.get(key)
     monthData.amount += item.amount
     monthData.count += 1
@@ -640,38 +673,38 @@ const timeFilteredMonthlyStats = computed(() => {
     monthData.year = year
     monthData.month = month
   })
-  
+
   // 转换为数组并按日期排序
   return Array.from(monthlyData.entries())
-    .map(([key, data]) => ({ ...data, key }))
-    .sort((a, b) => {
-      const [yearA, monthA] = a.key.split('-').map(Number)
-      const [yearB, monthB] = b.key.split('-').map(Number)
-      if (yearA !== yearB) return yearA - yearB
-      return monthA - monthB
-    })
+      .map(([key, data]) => ({...data, key}))
+      .sort((a, b) => {
+        const [yearA, monthA] = a.key.split('-').map(Number)
+        const [yearB, monthB] = b.key.split('-').map(Number)
+        if (yearA !== yearB) return yearA - yearB
+        return monthA - monthB
+      })
 })
 
 // 折线图数据
 const lineChartOption = computed(() => {
   const stats = timeFilteredMonthlyStats.value
   const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
-  
+
   // 按二级分类分组，计算每个分类在每个月的金额
   const subcategoryAmounts = new Map()
-  
+
   // 遍历所有月度数据
   stats.forEach(stat => {
     const monthKey = stat.key
-    
+
     // 遍历当月所有条目
     stat.items.forEach(item => {
       const subcategoryId = item.subcategory_id
-      
+
       // 查找二级分类
       const subcategory = subcategories.value.find(s => s.id === subcategoryId)
       if (!subcategory) return
-      
+
       // 检查是否需要根据一级分类过滤
       if (selectedCategory.value) {
         // 查找二级分类所属的一级分类
@@ -680,41 +713,41 @@ const lineChartOption = computed(() => {
           return // 不符合选中的一级分类，跳过
         }
       }
-      
+
       // 检查是否需要根据二级分类过滤
       if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
         return // 不符合选中的二级分类，跳过
       }
-      
+
       const subcategoryName = subcategory.name
-      
+
       // 初始化二级分类数据
       if (!subcategoryAmounts.has(subcategoryName)) {
         subcategoryAmounts.set(subcategoryName, new Map())
       }
-      
+
       const subcategoryMap = subcategoryAmounts.get(subcategoryName)
       // 累加当月金额
       const currentAmount = subcategoryMap.get(monthKey) || 0
       subcategoryMap.set(monthKey, currentAmount + item.amount)
     })
   })
-  
+
   // 准备系列数据
   const series = []
   const legendData = []
-  
+
   // 定义颜色数组，用于不同的二级分类
   const colors = ['#18a058', '#f53f3f', '#3b82f6', '#e2c044', '#8c52ff', '#ff7875', '#5cdbd3', '#ffa940', '#95de64', '#f7b801', '#722ed1', '#13c2c2', '#eb2f96', '#fa8c16', '#a0d911']
   let colorIndex = 0
-  
+
   // 为每个二级分类创建系列
   subcategoryAmounts.forEach((amountMap, subcategoryName) => {
     // 准备该分类在所有月份的数据
     const data = stats.map(stat => {
       return amountMap.get(stat.key) || 0
     })
-    
+
     series.push({
       name: subcategoryName,
       type: 'line',
@@ -734,17 +767,17 @@ const lineChartOption = computed(() => {
           x2: 0,
           y2: 1,
           colorStops: [
-            { offset: 0, color: `${colors[colorIndex % colors.length]}4d` }, // 4d 是透明度
-            { offset: 1, color: `${colors[colorIndex % colors.length]}0d` } // 0d 是透明度
+            {offset: 0, color: `${colors[colorIndex % colors.length]}4d`}, // 4d 是透明度
+            {offset: 1, color: `${colors[colorIndex % colors.length]}0d`} // 0d 是透明度
           ]
         }
       }
     })
-    
+
     legendData.push(subcategoryName)
     colorIndex++
   })
-  
+
   return {
     title: {
       text: '二级分类资金变化趋势',
@@ -790,60 +823,60 @@ const lineChartOption = computed(() => {
 const lineChartCategoryOption = computed(() => {
   const stats = timeFilteredMonthlyStats.value
   const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
-  
+
   // 按一级分类分组，计算每个分类在每个月的金额
   const categoryAmounts = new Map()
-  
+
   // 遍历所有月度数据
   stats.forEach(stat => {
     const monthKey = stat.key
-    
+
     // 遍历当月所有条目
     stat.items.forEach(item => {
       const subcategoryId = item.subcategory_id
-      
+
       // 查找二级分类
       const subcategory = subcategories.value.find(s => s.id === subcategoryId)
       if (!subcategory) return
-      
+
       // 查找一级分类
       const category = categories.value.find(c => c.id === subcategory.category_id)
       if (!category) return
-      
+
       // 检查是否需要根据一级分类过滤
       if (selectedCategory.value && category.id !== selectedCategory.value) {
         return // 不符合选中的一级分类，跳过
       }
-      
+
       const categoryName = category.name
-      
+
       // 初始化一级分类数据
       if (!categoryAmounts.has(categoryName)) {
         categoryAmounts.set(categoryName, new Map())
       }
-      
+
       const categoryMap = categoryAmounts.get(categoryName)
       // 累加当月金额
       const currentAmount = categoryMap.get(monthKey) || 0
       categoryMap.set(monthKey, currentAmount + item.amount)
     })
   })
-  
+
   // 准备系列数据
   const series = []
   const legendData = []
-  
+
   // 定义颜色数组，用于不同的一级分类
   const colors = ['#18a058', '#f53f3f', '#3b82f6', '#e2c044', '#8c52ff', '#ff7875', '#5cdbd3', '#ffa940', '#95de64', '#f7b801', '#722ed1', '#13c2c2', '#eb2f96', '#fa8c16', '#a0d911']
   let colorIndex = 0
-  
+
   // 为每个一级分类创建系列
   categoryAmounts.forEach((amountMap, categoryName) => {
     // 准备该分类在所有月份的数据
     const data = stats.map(stat => {
       return amountMap.get(stat.key) || 0
     })
-    
+
     series.push({
       name: categoryName,
       type: 'line',
@@ -863,17 +896,17 @@ const lineChartCategoryOption = computed(() => {
           x2: 0,
           y2: 1,
           colorStops: [
-            { offset: 0, color: `${colors[colorIndex % colors.length]}4d` }, // 4d 是透明度
-            { offset: 1, color: `${colors[colorIndex % colors.length]}0d` } // 0d 是透明度
+            {offset: 0, color: `${colors[colorIndex % colors.length]}4d`}, // 4d 是透明度
+            {offset: 1, color: `${colors[colorIndex % colors.length]}0d`} // 0d 是透明度
           ]
         }
       }
     })
-    
+
     legendData.push(categoryName)
     colorIndex++
   })
-  
+
   return {
     title: {
       text: '一级分类资金变化趋势',
@@ -919,17 +952,17 @@ const lineChartCategoryOption = computed(() => {
 const areaChartOption = computed(() => {
   // 获取原始月度数据
   const originalStats = timeFilteredMonthlyStats.value
-  
+
   // 筛选符合条件的月度数据
   const filteredStats = originalStats.filter(stat => {
     // 检查该月度数据中是否有符合条件的条目
     return stat.items.some(item => {
       const subcategoryId = item.subcategory_id
-      
+
       // 查找二级分类
       const subcategory = subcategories.value.find(s => s.id === subcategoryId)
       if (!subcategory) return false
-      
+
       // 检查是否需要根据一级分类过滤
       if (selectedCategory.value) {
         // 查找二级分类所属的一级分类
@@ -938,30 +971,30 @@ const areaChartOption = computed(() => {
           return false // 不符合选中的一级分类
         }
       }
-      
+
       // 检查是否需要根据二级分类过滤
       if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
         return false // 不符合选中的二级分类
       }
-      
+
       return true
     })
   })
-  
+
   // 使用过滤后的数据，如果过滤后为空则使用原始数据
   const stats = filteredStats.length > 0 ? filteredStats : originalStats
   const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
-  
+
   // 计算广义金额和可支配金额的当月数据
   const broadAmountData = stats.map(stat => {
     // 筛选符合条件的条目
     const filteredItems = stat.items.filter(item => {
       const subcategoryId = item.subcategory_id
-      
+
       // 查找二级分类
       const subcategory = subcategories.value.find(s => s.id === subcategoryId)
       if (!subcategory) return false
-      
+
       // 检查是否需要根据一级分类过滤
       if (selectedCategory.value) {
         // 查找二级分类所属的一级分类
@@ -970,30 +1003,30 @@ const areaChartOption = computed(() => {
           return false // 不符合选中的一级分类，跳过
         }
       }
-      
+
       // 检查是否需要根据二级分类过滤
       if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
         return false // 不符合选中的二级分类，跳过
       }
-      
+
       return true
     })
-    
+
     // 计算广义金额
-    const { broadAmount } = calculateBroadAndDisposableAmount(filteredItems)
-    
+    const {broadAmount} = calculateBroadAndDisposableAmount(filteredItems)
+
     return broadAmount
   })
-  
+
   const disposableAmountData = stats.map(stat => {
     // 筛选符合条件的条目
     const filteredItems = stat.items.filter(item => {
       const subcategoryId = item.subcategory_id
-      
+
       // 查找二级分类
       const subcategory = subcategories.value.find(s => s.id === subcategoryId)
       if (!subcategory) return false
-      
+
       // 检查是否需要根据一级分类过滤
       if (selectedCategory.value) {
         // 查找二级分类所属的一级分类
@@ -1002,21 +1035,21 @@ const areaChartOption = computed(() => {
           return false // 不符合选中的一级分类，跳过
         }
       }
-      
+
       // 检查是否需要根据二级分类过滤
       if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
         return false // 不符合选中的二级分类，跳过
       }
-      
+
       return true
     })
-    
+
     // 计算可支配金额
-    const { disposableAmount } = calculateBroadAndDisposableAmount(filteredItems)
-    
+    const {disposableAmount} = calculateBroadAndDisposableAmount(filteredItems)
+
     return disposableAmount
   })
-  
+
   return {
     title: {
       text: '总金额变化',
@@ -1067,8 +1100,8 @@ const areaChartOption = computed(() => {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(59, 130, 246, 0.3)' },
-              { offset: 1, color: 'rgba(59, 130, 246, 0.05)' }
+              {offset: 0, color: 'rgba(59, 130, 246, 0.3)'},
+              {offset: 1, color: 'rgba(59, 130, 246, 0.05)'}
             ]
           }
         }
@@ -1089,8 +1122,8 @@ const areaChartOption = computed(() => {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(245, 63, 63, 0.3)' },
-              { offset: 1, color: 'rgba(245, 63, 63, 0.05)' }
+              {offset: 0, color: 'rgba(245, 63, 63, 0.3)'},
+              {offset: 1, color: 'rgba(245, 63, 63, 0.05)'}
             ]
           }
         }
@@ -1103,7 +1136,7 @@ const areaChartOption = computed(() => {
 const monthlyAssetsAndLiabilities = computed(() => {
   // 先按月份和二级分类分组，每个分组只保留最新的一条记录
   const monthlySubcategoryData = new Map()
-  
+
   // 遍历所有条目，按月份和二级分类分组，保留最新记录
   items.value.forEach(item => {
     const recordDate = new Date(item.record_date)
@@ -1111,7 +1144,7 @@ const monthlyAssetsAndLiabilities = computed(() => {
     const month = recordDate.getMonth()
     const subcategoryId = item.subcategory_id
     const key = `${year}-${month}-${subcategoryId}`
-    
+
     // 检查是否已有该月份该二级分类的数据
     if (!monthlySubcategoryData.has(key)) {
       monthlySubcategoryData.set(key, item)
@@ -1124,17 +1157,17 @@ const monthlyAssetsAndLiabilities = computed(() => {
       }
     }
   })
-  
+
   // 再按月份分组计算资产和负债
   const monthlyData = new Map()
-  
+
   Array.from(monthlySubcategoryData.values()).forEach(item => {
     const subcategoryId = item.subcategory_id
-    
+
     // 查找二级分类
     const subcategory = subcategories.value.find(s => s.id === subcategoryId)
     if (!subcategory) return
-    
+
     // 检查是否需要根据一级分类过滤
     if (selectedCategory.value) {
       // 查找二级分类所属的一级分类
@@ -1143,21 +1176,21 @@ const monthlyAssetsAndLiabilities = computed(() => {
         return // 不符合选中的一级分类，跳过
       }
     }
-    
+
     // 检查是否需要根据二级分类过滤
     if (selectedSubcategory.value && subcategoryId !== selectedSubcategory.value) {
       return // 不符合选中的二级分类，跳过
     }
-    
+
     const recordDate = new Date(item.record_date)
     const year = recordDate.getFullYear()
     const month = recordDate.getMonth()
     const key = `${year}-${month}`
-    
+
     if (!monthlyData.has(key)) {
-      monthlyData.set(key, { positive: 0, negative: 0, year, month })
+      monthlyData.set(key, {positive: 0, negative: 0, year, month})
     }
-    
+
     const monthData = monthlyData.get(key)
     if (item.amount > 0) {
       monthData.positive += item.amount
@@ -1165,13 +1198,13 @@ const monthlyAssetsAndLiabilities = computed(() => {
       monthData.negative += item.amount
     }
   })
-  
+
   // 转换为数组并按月份排序
   return Array.from(monthlyData.values())
-    .sort((a, b) => {
-      if (a.year !== b.year) return a.year - b.year
-      return a.month - b.month
-    })
+      .sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year
+        return a.month - b.month
+      })
 })
 
 // 月度资金汇总面积图数据
@@ -1180,7 +1213,7 @@ const annualBarChartOption = computed(() => {
   const xAxisData = data.map(item => `${item.year}-${(item.month + 1).toString().padStart(2, '0')}`)
   const positiveData = data.map(item => parseFloat(item.positive.toFixed(2)))
   const negativeData = data.map(item => Math.abs(parseFloat(item.negative.toFixed(2))))
-  
+
   return {
     title: {
       text: '月度资金汇总',
@@ -1228,8 +1261,8 @@ const annualBarChartOption = computed(() => {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(24, 160, 88, 0.3)' },
-              { offset: 1, color: 'rgba(24, 160, 88, 0.05)' }
+              {offset: 0, color: 'rgba(24, 160, 88, 0.3)'},
+              {offset: 1, color: 'rgba(24, 160, 88, 0.05)'}
             ]
           }
         }
@@ -1250,8 +1283,8 @@ const annualBarChartOption = computed(() => {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(245, 63, 63, 0.3)' },
-              { offset: 1, color: 'rgba(245, 63, 63, 0.05)' }
+              {offset: 0, color: 'rgba(245, 63, 63, 0.3)'},
+              {offset: 1, color: 'rgba(245, 63, 63, 0.05)'}
             ]
           }
         }
@@ -1277,10 +1310,10 @@ const resetCustomLimits = () => {
 
 // 监听筛选条件变化，重置自定义上下限
 watch(
-  [selectedCategory, selectedSubcategory, selectedDate, selectedTimeRange],
-  () => {
-    resetCustomLimits()
-  }
+    [selectedCategory, selectedSubcategory, selectedDate, selectedTimeRange],
+    () => {
+      resetCustomLimits()
+    }
 )
 
 // 当前操作的条目
@@ -1290,32 +1323,32 @@ const deletingItem = ref(null)
 
 // 计算属性
 const categoryOptions = computed(() => {
-  return categories.value.filter(c => c).map(c => ({ label: c.name, value: c.id }))
+  return categories.value.filter(c => c).map(c => ({label: c.name, value: c.id}))
 })
 
 const subcategoryOptions = computed(() => {
   if (!selectedCategory.value) {
-    return subcategories.value.filter(s => s).map(s => ({ label: s.name, value: s.id }))
+    return subcategories.value.filter(s => s).map(s => ({label: s.name, value: s.id}))
   }
   return subcategories.value
-    .filter(s => s && s.category_id === selectedCategory.value)
-    .map(s => ({ label: s.name, value: s.id }))
+      .filter(s => s && s.category_id === selectedCategory.value)
+      .map(s => ({label: s.name, value: s.id}))
 })
 
 // 按月份分组计算
 const monthlyStats = computed(() => {
   const monthlyData = new Map()
-  
+
   filteredItems.value.forEach(item => {
     const recordDate = new Date(item.record_date)
     const year = recordDate.getFullYear()
     const month = recordDate.getMonth()
     const key = `${year}-${month}`
-    
+
     if (!monthlyData.has(key)) {
-      monthlyData.set(key, { amount: 0, count: 0, items: [] })
+      monthlyData.set(key, {amount: 0, count: 0, items: []})
     }
-    
+
     const monthData = monthlyData.get(key)
     monthData.amount += item.amount
     monthData.count += 1
@@ -1323,40 +1356,40 @@ const monthlyStats = computed(() => {
     monthData.year = year
     monthData.month = month
   })
-  
+
   // 转换为数组并按日期排序
   return Array.from(monthlyData.entries())
-    .map(([key, data]) => ({ ...data, key }))
-    .sort((a, b) => {
-      const [yearA, monthA] = a.key.split('-').map(Number)
-      const [yearB, monthB] = b.key.split('-').map(Number)
-      if (yearA !== yearB) return yearA - yearB
-      return monthA - monthB
-    })
+      .map(([key, data]) => ({...data, key}))
+      .sort((a, b) => {
+        const [yearA, monthA] = a.key.split('-').map(Number)
+        const [yearB, monthB] = b.key.split('-').map(Number)
+        if (yearA !== yearB) return yearA - yearB
+        return monthA - monthB
+      })
 })
 
 // 计算增长、同比、环比
 const calculateGrowthStats = (currentAmount, currentKey, monthlyStats) => {
   const [currentYear, currentMonth] = currentKey.split('-').map(Number)
-  
+
   // 计算环比：与上月比较
-  const previousMonthKey = currentMonth === 0 
-    ? `${currentYear - 1}-${11}` 
-    : `${currentYear}-${currentMonth - 1}`
+  const previousMonthKey = currentMonth === 0
+      ? `${currentYear - 1}-${11}`
+      : `${currentYear}-${currentMonth - 1}`
   const previousMonthData = monthlyStats.find(stat => stat.key === previousMonthKey)
   const previousAmount = previousMonthData?.amount || 0
-  
+
   const growth = currentAmount - previousAmount
   const growthRate = previousAmount === 0 ? 0 : ((growth / Math.abs(previousAmount)) * 100).toFixed(2)
-  
+
   // 计算同比：与去年同月比较
   const sameMonthLastYearKey = `${currentYear - 1}-${currentMonth}`
   const sameMonthLastYearData = monthlyStats.find(stat => stat.key === sameMonthLastYearKey)
   const sameMonthLastYearAmount = sameMonthLastYearData?.amount || 0
-  
+
   const yoyGrowth = currentAmount - sameMonthLastYearAmount
   const yoyGrowthRate = sameMonthLastYearAmount === 0 ? 0 : ((yoyGrowth / Math.abs(sameMonthLastYearAmount)) * 100).toFixed(2)
-  
+
   return {
     growth: parseFloat(growth.toFixed(2)),
     growthRate: parseFloat(growthRate),
@@ -1374,27 +1407,27 @@ const totalAmount = computed(() => {
 const calculateBroadAndDisposableAmount = (items) => {
   // 广义金额：所有金额之和
   const broadAmount = items.reduce((sum, item) => sum + item.amount, 0)
-  
+
   // 计算可支配金额：广义金额减去一级分类为房贷和二级分类为蜻蜓点金的金额
   const nonDisposableAmount = items.reduce((sum, item) => {
     // 查找二级分类
     const subcategory = subcategories.value.find(s => s.id === item.subcategory_id)
     if (!subcategory) return sum
-    
+
     // 查找一级分类
     const category = categories.value.find(c => c.id === subcategory.category_id)
     if (!category) return sum
-    
+
     // 检查是否为房贷一级分类或蜻蜓点金二级分类
     if (category.name === '房贷' || subcategory.name === '蜻蜓点金') {
       return sum + item.amount
     }
-    
+
     return sum
   }, 0)
-  
+
   const disposableAmount = broadAmount - nonDisposableAmount
-  
+
   return {
     broadAmount: parseFloat(broadAmount.toFixed(2)),
     disposableAmount: parseFloat(disposableAmount.toFixed(2))
@@ -1421,33 +1454,33 @@ const latestMonthStats = computed(() => {
       disposableYoyGrowthRate: 0
     }
   }
-  
+
   // 获取最新月份数据（如果选择了月份，则为选择的月份）
   const latestStat = monthlyStats.value[monthlyStats.value.length - 1]
   const currentAmount = latestStat.amount
-  
+
   // 计算广义金额和可支配金额
-  const { broadAmount, disposableAmount } = calculateBroadAndDisposableAmount(latestStat.items)
-  
+  const {broadAmount, disposableAmount} = calculateBroadAndDisposableAmount(latestStat.items)
+
   // 计算金额的增长统计
   const amountGrowthStats = calculateGrowthStats(currentAmount, latestStat.key, monthlyStats.value)
-  
+
   // 计算广义金额的增长统计
-  const broadGrowthStats = calculateGrowthStats(broadAmount, latestStat.key, 
-    monthlyStats.value.map(stat => ({
-      ...stat,
-      amount: calculateBroadAndDisposableAmount(stat.items).broadAmount
-    }))
+  const broadGrowthStats = calculateGrowthStats(broadAmount, latestStat.key,
+      monthlyStats.value.map(stat => ({
+        ...stat,
+        amount: calculateBroadAndDisposableAmount(stat.items).broadAmount
+      }))
   )
-  
+
   // 计算可支配金额的增长统计
-  const disposableGrowthStats = calculateGrowthStats(disposableAmount, latestStat.key, 
-    monthlyStats.value.map(stat => ({
-      ...stat,
-      amount: calculateBroadAndDisposableAmount(stat.items).disposableAmount
-    }))
+  const disposableGrowthStats = calculateGrowthStats(disposableAmount, latestStat.key,
+      monthlyStats.value.map(stat => ({
+        ...stat,
+        amount: calculateBroadAndDisposableAmount(stat.items).disposableAmount
+      }))
   )
-  
+
   return {
     currentAmount,
     broadAmount,
@@ -1468,66 +1501,66 @@ const latestMonthStats = computed(() => {
 const dateGroupedStats = computed(() => {
   // 按日期分组
   const dateMap = new Map()
-  
+
   filteredItems.value.forEach(item => {
     const recordDate = new Date(item.record_date)
     const dateKey = recordDate.toISOString().split('T')[0] // YYYY-MM-DD
-    
+
     if (!dateMap.has(dateKey)) {
       dateMap.set(dateKey, {
         date: dateKey,
         items: []
       })
     }
-    
+
     dateMap.get(dateKey).items.push(item)
   })
-  
+
   // 计算基本统计数据
   const basicStats = Array.from(dateMap.values()).map(stat => {
     // 广义金额：当日所有金额之和
     const broadAmount = stat.items.reduce((sum, item) => sum + item.amount, 0)
-    
+
     // 计算可支配金额：广义金额减去一级分类为房贷和二级分类为蜻蜓点金的金额
     const nonDisposableAmount = stat.items.reduce((sum, item) => {
       // 查找二级分类
       const subcategory = subcategories.value.find(s => s.id === item.subcategory_id)
       if (!subcategory) return sum
-      
+
       // 查找一级分类
       const category = categories.value.find(c => c.id === subcategory.category_id)
       if (!category) return sum
-      
+
       // 检查是否为房贷一级分类或蜻蜓点金二级分类
       if (category.name === '房贷' || subcategory.name === '蜻蜓点金') {
         return sum + item.amount
       }
-      
+
       return sum
     }, 0)
-    
+
     const disposableAmount = broadAmount - nonDisposableAmount
-    
+
     return {
       date: stat.date,
       broadAmount: parseFloat(broadAmount.toFixed(2)),
       disposableAmount: parseFloat(disposableAmount.toFixed(2))
     }
   }).sort((a, b) => new Date(a.date) - new Date(b.date)) // 先按日期正序排列，方便计算指标
-  
+
   // 计算增长、环比、同比指标
   return basicStats.map((stat, index) => {
     const currentDate = new Date(stat.date)
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
     const day = currentDate.getDate()
-    
+
     // 广义金额指标
     // 1. 增长（与前一天比较）
     const prevBroadAmount = index > 0 ? basicStats[index - 1].broadAmount : 0
     const broadGrowth = stat.broadAmount - prevBroadAmount
     const broadGrowthRate = prevBroadAmount === 0 ? 0 : ((broadGrowth / Math.abs(prevBroadAmount)) * 100)
-    
+
     // 2. 同比（与去年同期比较）
     const sameDayLastYearDate = new Date(year - 1, month, day)
     const sameDayLastYearKey = sameDayLastYearDate.toISOString().split('T')[0]
@@ -1535,18 +1568,18 @@ const dateGroupedStats = computed(() => {
     const sameDayLastYearBroadAmount = sameDayLastYearStat?.broadAmount || 0
     const broadYoyGrowth = stat.broadAmount - sameDayLastYearBroadAmount
     const broadYoyGrowthRate = sameDayLastYearBroadAmount === 0 ? 0 : ((broadYoyGrowth / Math.abs(sameDayLastYearBroadAmount)) * 100)
-    
+
     // 可支配金额指标
     // 1. 增长（与前一天比较）
     const prevDisposableAmount = index > 0 ? basicStats[index - 1].disposableAmount : 0
     const disposableGrowth = stat.disposableAmount - prevDisposableAmount
     const disposableGrowthRate = prevDisposableAmount === 0 ? 0 : ((disposableGrowth / Math.abs(prevDisposableAmount)) * 100)
-    
+
     // 2. 同比（与去年同期比较）
     const sameDayLastYearDisposableAmount = sameDayLastYearStat?.disposableAmount || 0
     const disposableYoyGrowth = stat.disposableAmount - sameDayLastYearDisposableAmount
     const disposableYoyGrowthRate = sameDayLastYearDisposableAmount === 0 ? 0 : ((disposableYoyGrowth / Math.abs(sameDayLastYearDisposableAmount)) * 100)
-    
+
     return {
       ...stat,
       // 广义金额指标
@@ -1683,11 +1716,11 @@ const statsColumns = [
 const filterByTimeRange = (items, timeRange) => {
   const now = new Date()
   const currentYear = now.getFullYear()
-  
+
   return items.filter(item => {
     const itemDate = new Date(item.record_date)
     const itemYear = itemDate.getFullYear()
-    
+
     switch (timeRange) {
       case 'this_year':
         return itemYear === currentYear
@@ -1713,20 +1746,20 @@ const filterByTimeRange = (items, timeRange) => {
 // 筛选后的条目
 const filteredItems = computed(() => {
   let result = [...items.value]
-  
+
   // 按一级分类筛选
   if (selectedCategory.value) {
     const categorySubcategories = subcategories.value
-      .filter(s => s.category_id === selectedCategory.value)
-      .map(s => s.id)
+        .filter(s => s.category_id === selectedCategory.value)
+        .map(s => s.id)
     result = result.filter(item => categorySubcategories.includes(item.subcategory_id))
   }
-  
+
   // 按二级分类筛选
   if (selectedSubcategory.value) {
     result = result.filter(item => item.subcategory_id === selectedSubcategory.value)
   }
-  
+
   // 按月份筛选
   if (selectedDate.value) {
     const year = selectedDate.value.getFullYear()
@@ -1736,10 +1769,10 @@ const filteredItems = computed(() => {
       return itemDate.getFullYear() === year && itemDate.getMonth() === month
     })
   }
-  
+
   // 按时间范围筛选
   result = filterByTimeRange(result, selectedTimeRange.value)
-  
+
   // 按日期降序排序
   return result.sort((a, b) => new Date(b.record_date) - new Date(a.record_date))
 })
@@ -1748,7 +1781,7 @@ const filteredItems = computed(() => {
 const itemsWithGrowthStats = computed(() => {
   // 获取所有条目，按日期降序排序
   const allItems = [...items.value].sort((a, b) => new Date(b.record_date) - new Date(a.record_date))
-  
+
   // 创建一个映射，按二级分类分组所有条目
   const itemsBySubcategory = new Map()
   allItems.forEach(item => {
@@ -1757,7 +1790,7 @@ const itemsWithGrowthStats = computed(() => {
     }
     itemsBySubcategory.get(item.subcategory_id).push(item)
   })
-  
+
   // 创建一个映射，存储每个二级分类下每个月份的最新记录（用于同比计算）
   const monthlyLatestBySubcategory = new Map()
   allItems.forEach(item => {
@@ -1766,52 +1799,52 @@ const itemsWithGrowthStats = computed(() => {
     const month = recordDate.getMonth()
     const subcategoryKey = item.subcategory_id
     const monthKey = `${year}-${month}`
-    
+
     if (!monthlyLatestBySubcategory.has(subcategoryKey)) {
       monthlyLatestBySubcategory.set(subcategoryKey, new Map())
     }
-    
+
     const subcategoryMonthlyMap = monthlyLatestBySubcategory.get(subcategoryKey)
     if (!subcategoryMonthlyMap.has(monthKey)) {
       subcategoryMonthlyMap.set(monthKey, item)
     }
   })
-  
+
   return filteredItems.value.map(item => {
     const recordDate = new Date(item.record_date)
     const year = recordDate.getFullYear()
     const month = recordDate.getMonth()
     const subcategoryId = item.subcategory_id
-    
+
     // 获取同一二级分类下的所有条目
     const sameSubcategoryItems = itemsBySubcategory.get(subcategoryId) || []
-    
+
     // 查找当前条目的上一条记录（同一二级分类，按日期排序）
     const currentIndex = sameSubcategoryItems.findIndex(i => i.id === item.id)
     const previousItem = currentIndex < sameSubcategoryItems.length - 1 ? sameSubcategoryItems[currentIndex + 1] : null
-    
+
     // 计算增长和环比（与上一条记录比较）
     let growth = 0
     let growthRate = 0
-    
+
     if (previousItem) {
       growth = item.amount - previousItem.amount
       growthRate = previousItem.amount === 0 ? 0 : ((growth / Math.abs(previousItem.amount)) * 100).toFixed(2)
     }
-    
+
     // 计算同比（与去年同月最新记录比较）
     let yoyGrowth = 0
     let yoyGrowthRate = 0
-    
+
     const sameMonthLastYearKey = `${year - 1}-${month}`
     const subcategoryMonthlyMap = monthlyLatestBySubcategory.get(subcategoryId)
     const sameMonthLastYearItem = subcategoryMonthlyMap?.get(sameMonthLastYearKey)
-    
+
     if (sameMonthLastYearItem) {
       yoyGrowth = item.amount - sameMonthLastYearItem.amount
       yoyGrowthRate = sameMonthLastYearItem.amount === 0 ? 0 : ((yoyGrowth / Math.abs(sameMonthLastYearItem.amount)) * 100).toFixed(2)
     }
-    
+
     return {
       ...item,
       growth: parseFloat(growth.toFixed(2)),
@@ -1855,7 +1888,7 @@ const columns = [
           display: 'flex',
           alignItems: 'center',
           gap: '5px',
-          color: isPositive ? '#f53f3f':'#18a058'
+          color: isPositive ? '#f53f3f' : '#18a058'
         }
       }, [
         h(NIcon, null, {
@@ -1881,12 +1914,12 @@ const columns = [
       const value = parseFloat(row.growth || 0)
       const isNegative = value < 0
       const displayValue = Math.abs(value).toFixed(2)
-      const icon = isNegative ? 
-        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
-        h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
-      return h('div', { 
+      const icon = isNegative ?
+          h(NIcon, {size: 14, color: '#18a058'}, {default: () => h(CaretDownOutline)}) :
+          h(NIcon, {size: 14, color: '#f53f3f'}, {default: () => h(CaretUpOutline)})
+      return h('div', {
         class: 'growth-item',
-        style: { color: isNegative ? '#18a058' : '#f53f3f' }
+        style: {color: isNegative ? '#18a058' : '#f53f3f'}
       }, [icon, ` ${displayValue}元`])
     }
   },
@@ -1898,12 +1931,12 @@ const columns = [
       const value = parseFloat(row.growthRate || 0)
       const isNegative = value < 0
       const displayValue = Math.abs(value).toFixed(2)
-      const icon = isNegative ? 
-        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
-        h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
-      return h('div', { 
+      const icon = isNegative ?
+          h(NIcon, {size: 14, color: '#18a058'}, {default: () => h(CaretDownOutline)}) :
+          h(NIcon, {size: 14, color: '#f53f3f'}, {default: () => h(CaretUpOutline)})
+      return h('div', {
         class: 'growth-item',
-        style: { color: isNegative ? '#18a058' : '#f53f3f' }
+        style: {color: isNegative ? '#18a058' : '#f53f3f'}
       }, [icon, ` ${displayValue}%`])
     }
   },
@@ -1915,12 +1948,12 @@ const columns = [
       const value = parseFloat(row.yoyGrowthRate || 0)
       const isNegative = value < 0
       const displayValue = Math.abs(value).toFixed(2)
-      const icon = isNegative ? 
-        h(NIcon, { size: 14, color: '#18a058' }, { default: () => h(CaretDownOutline) }) : 
-        h(NIcon, { size: 14, color: '#f53f3f' }, { default: () => h(CaretUpOutline) })
-      return h('div', { 
+      const icon = isNegative ?
+          h(NIcon, {size: 14, color: '#18a058'}, {default: () => h(CaretDownOutline)}) :
+          h(NIcon, {size: 14, color: '#f53f3f'}, {default: () => h(CaretUpOutline)})
+      return h('div', {
         class: 'growth-item',
-        style: { color: isNegative ? '#18a058' : '#f53f3f' }
+        style: {color: isNegative ? '#18a058' : '#f53f3f'}
       }, [icon, ` ${displayValue}%`])
     }
   },
@@ -1929,14 +1962,14 @@ const columns = [
     key: 'actions',
     width: 120,
     render(row) {
-      return h('div', { class: 'actions-cell' }, [
+      return h('div', {class: 'actions-cell'}, [
         // 查看图标按钮
         h('div', {
           class: 'icon-btn icon-btn-primary',
           onClick: () => handleViewItem(row),
           title: '查看记录'
         }, [
-          h(NIcon, { size: 18 }, { default: () => h(EyeOutline) })
+          h(NIcon, {size: 18}, {default: () => h(EyeOutline)})
         ]),
         // 编辑图标按钮
         h('div', {
@@ -1944,7 +1977,7 @@ const columns = [
           onClick: () => handleEditItem(row),
           title: '编辑记录'
         }, [
-          h(NIcon, { size: 18 }, { default: () => h(CreateOutline) })
+          h(NIcon, {size: 18}, {default: () => h(CreateOutline)})
         ]),
         // 删除图标按钮
         h('div', {
@@ -1952,7 +1985,7 @@ const columns = [
           onClick: () => handleDeleteItem(row),
           title: '删除记录'
         }, [
-          h(NIcon, { size: 18 }, { default: () => h(TrashOutline) })
+          h(NIcon, {size: 18}, {default: () => h(TrashOutline)})
         ])
       ])
     }
@@ -1964,26 +1997,26 @@ const loadData = async () => {
   loading.value = true
   try {
     // 加载一级分类
-    const { data: categoriesData } = await supabase
-      .from('balance_categories')
-      .select('*')
-      .order('created_at', { ascending: true })
+    const {data: categoriesData} = await supabase
+        .from('balance_categories')
+        .select('*')
+        .order('created_at', {ascending: true})
     categories.value = categoriesData || []
-    
+
     // 加载二级分类
-    const { data: subcategoriesData } = await supabase
-      .from('balance_subcategories')
-      .select('*')
-      .order('created_at', { ascending: true })
+    const {data: subcategoriesData} = await supabase
+        .from('balance_subcategories')
+        .select('*')
+        .order('created_at', {ascending: true})
     subcategories.value = subcategoriesData || []
-    
+
     // 加载资金条目
-    const { data: itemsData } = await supabase
-      .from('balance_items')
-      .select('*')
-      .order('record_date', { ascending: false })
+    const {data: itemsData} = await supabase
+        .from('balance_items')
+        .select('*')
+        .order('record_date', {ascending: false})
     items.value = itemsData || []
-    
+
     //message.success('数据加载成功')
   } catch (error) {
     console.error('加载数据失败:', error)
@@ -2011,7 +2044,7 @@ const handleBatchImport = async (file) => {
   try {
     importing.value = true
     importResult.value = null
-    message.loading('解析文件中...', { duration: 2000 })
+    message.loading('解析文件中...', {duration: 2000})
 
     let records
     const ext = file.name.split('.').pop().toLowerCase()
@@ -2025,13 +2058,13 @@ const handleBatchImport = async (file) => {
     }
 
     if (!records || records.length === 0) throw new Error('文件无数据')
-    
+
     // 1. 提取所有分类，统一创建不存在的分类
-    const { primaryCategoriesMap, secondaryCategoriesMap } = await extractAndCreateCategories(records)
-    
+    const {primaryCategoriesMap, secondaryCategoriesMap} = await extractAndCreateCategories(records)
+
     // 2. 验证记录，使用已创建的分类ID
     const validRecords = await validateRecordsWithCategories(records, primaryCategoriesMap, secondaryCategoriesMap)
-    
+
     // 3. 批量插入记录
     await batchInsertRecords(validRecords)
     await loadData()
@@ -2081,14 +2114,14 @@ const parseCSV = (content) => {
 // 创建分类的辅助函数
 const createPrimaryCategory = async (name) => {
   try {
-    const { data, error } = await supabase
-      .from('balance_categories')
-      .insert({
-        name: name,
-        description: `${name}分类（自动创建）`
-      })
-      .single()
-    
+    const {data, error} = await supabase
+        .from('balance_categories')
+        .insert({
+          name: name,
+          description: `${name}分类（自动创建）`
+        })
+        .single()
+
     if (error) throw error
     return data
   } catch (error) {
@@ -2099,19 +2132,19 @@ const createPrimaryCategory = async (name) => {
 
 const createSecondaryCategory = async (name, categoryId) => {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {data: {user}} = await supabase.auth.getUser()
     if (!user) throw new Error('请先登录')
-    
-    const { data, error } = await supabase
-      .from('balance_subcategories')
-      .insert({
-        user_id: user.id,
-        category_id: categoryId,
-        name: name,
-        description: `${name}子分类（自动创建）`
-      })
-      .single()
-    
+
+    const {data, error} = await supabase
+        .from('balance_subcategories')
+        .insert({
+          user_id: user.id,
+          category_id: categoryId,
+          name: name,
+          description: `${name}子分类（自动创建）`
+        })
+        .single()
+
     if (error) throw error
     return data
   } catch (error) {
@@ -2126,7 +2159,7 @@ const parseExcel = (file) => {
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target.result)
-        const workbook = XLSX.read(data, { type: 'array' })
+        const workbook = XLSX.read(data, {type: 'array'})
         const sheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[sheetName]
         const json = XLSX.utils.sheet_to_json(worksheet)
@@ -2145,20 +2178,20 @@ const extractAndCreateCategories = async (records) => {
   // 使用Map存储分类，避免重复创建
   const primaryCategoriesSet = new Set()
   const secondaryCategoriesMap = new Map() // key: 一级分类名称|二级分类名称, value: 二级分类名称
-  
+
   // 1. 提取所有分类组合
   for (const record of records) {
     const primaryCategoryName = (record['一级分类'] || '').toString().trim()
     const secondaryCategoryName = (record['二级分类'] || '').toString().trim()
-    
+
     if (primaryCategoryName && secondaryCategoryName) {
       primaryCategoriesSet.add(primaryCategoryName)
       // 使用一级分类+二级分类作为唯一键，确保不同一级分类下的同名二级分类可以共存
       const comboKey = `${primaryCategoryName}|${secondaryCategoryName}`
-      secondaryCategoriesMap.set(comboKey, { primaryCategoryName, secondaryCategoryName })
+      secondaryCategoriesMap.set(comboKey, {primaryCategoryName, secondaryCategoryName})
     }
   }
-  
+
   // 2. 创建不存在的一级分类
   message.info(`开始处理一级分类，共 ${primaryCategoriesSet.size} 个...`)
   for (const name of primaryCategoriesSet) {
@@ -2175,29 +2208,29 @@ const extractAndCreateCategories = async (records) => {
       }
     }
   }
-  
+
   // 3. 重新查询所有一级分类
   message.info('重新加载一级分类数据...')
-  const { data: categoriesData } = await supabase
-    .from('balance_categories')
-    .select('*')
-    .order('created_at', { ascending: true })
+  const {data: categoriesData} = await supabase
+      .from('balance_categories')
+      .select('*')
+      .order('created_at', {ascending: true})
   categories.value = categoriesData || []
-  
+
   // 4. 创建不存在的二级分类
   message.info(`开始处理二级分类，共 ${secondaryCategoriesMap.size} 个...`)
-  for (const [comboKey, { primaryCategoryName, secondaryCategoryName }] of secondaryCategoriesMap) {
+  for (const [comboKey, {primaryCategoryName, secondaryCategoryName}] of secondaryCategoriesMap) {
     // 查找对应的一级分类ID
     const primaryCategory = categories.value.filter(c => c).find(c => c.name === primaryCategoryName)
     if (!primaryCategory || !primaryCategory.id) {
       throw new Error(`无法获取一级分类"${primaryCategoryName}"的ID`)
     }
-    
+
     // 检查二级分类是否已存在
-    const exists = subcategories.value.filter(s => s).some(s => 
-      s.name === secondaryCategoryName && s.category_id === primaryCategory.id
+    const exists = subcategories.value.filter(s => s).some(s =>
+        s.name === secondaryCategoryName && s.category_id === primaryCategory.id
     )
-    
+
     if (!exists) {
       try {
         // 自动创建二级分类
@@ -2209,15 +2242,15 @@ const extractAndCreateCategories = async (records) => {
       }
     }
   }
-  
+
   // 5. 重新查询所有二级分类
   message.info('重新加载二级分类数据...')
-  const { data: subcategoriesData } = await supabase
-    .from('balance_subcategories')
-    .select('*')
-    .order('created_at', { ascending: true })
+  const {data: subcategoriesData} = await supabase
+      .from('balance_subcategories')
+      .select('*')
+      .order('created_at', {ascending: true})
   subcategories.value = subcategoriesData || []
-  
+
   // 6. 构建分类映射
   const finalPrimaryCategoriesMap = new Map()
   for (const category of categories.value) {
@@ -2225,7 +2258,7 @@ const extractAndCreateCategories = async (records) => {
       finalPrimaryCategoriesMap.set(category.name, category.id)
     }
   }
-  
+
   const finalSecondaryCategoriesMap = new Map()
   for (const subcategory of subcategories.value) {
     if (subcategory && subcategory.name && subcategory.id && subcategory.category_id) {
@@ -2237,14 +2270,14 @@ const extractAndCreateCategories = async (records) => {
       }
     }
   }
-  
-  return { primaryCategoriesMap: finalPrimaryCategoriesMap, secondaryCategoriesMap: finalSecondaryCategoriesMap }
+
+  return {primaryCategoriesMap: finalPrimaryCategoriesMap, secondaryCategoriesMap: finalSecondaryCategoriesMap}
 }
 
 // 使用预创建的分类验证记录
 const validateRecordsWithCategories = async (records, primaryCategoriesMap, secondaryCategoriesMap) => {
   const valid = []
-  
+
   for (let i = 0; i < records.length; i++) {
     const record = records[i];
     const errors = []
@@ -2265,19 +2298,19 @@ const validateRecordsWithCategories = async (records, primaryCategoriesMap, seco
     // 提取一级分类和二级分类名称
     const primaryCategoryName = (record['一级分类'] || '').toString().trim()
     const secondaryCategoryName = (record['二级分类'] || '').toString().trim()
-    
+
     if (!primaryCategoryName) {
       errors.push(`一级分类不能为空（第${rowNum}行）`)
     }
     if (!secondaryCategoryName) {
       errors.push(`二级分类不能为空（第${rowNum}行）`)
     }
-    
+
     if (primaryCategoryName && secondaryCategoryName) {
       // 使用预创建的分类映射获取分类ID
       const comboKey = `${primaryCategoryName}|${secondaryCategoryName}`
       subcategoryId = secondaryCategoriesMap.get(comboKey)
-      
+
       if (!subcategoryId) {
         errors.push(`分类映射失败，请检查分类数据（第${rowNum}行）`)
       }
@@ -2302,7 +2335,7 @@ const validateRecordsWithCategories = async (records, primaryCategoriesMap, seco
         recordDate = parsedDate.toISOString().split('T')[0]
       }
     }
-    
+
     // 验证最终日期格式
     if (!recordDate || isNaN(Date.parse(recordDate))) {
       errors.push(`日期格式无效，请使用 YYYY-MM-DD 格式（第${rowNum}行）`)
@@ -2333,7 +2366,7 @@ const validateRecordsWithCategories = async (records, primaryCategoriesMap, seco
   if (valid.length === 0) {
     throw new Error('无有效记录，请检查导入数据格式和内容')
   }
-  
+
   message.success(`成功验证 ${valid.length} 条记录，开始导入...`)
   return valid
 }
@@ -2342,7 +2375,7 @@ const validateRecordsWithCategories = async (records, primaryCategoriesMap, seco
 const validateRecords = validateRecordsWithCategories
 
 const batchInsertRecords = async (records) => {
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  const {data: {user}, error: authError} = await supabase.auth.getUser()
   if (authError || !user) throw new Error('请先登录')
 
   const recordsWithUserId = records.map(r => ({
@@ -2357,9 +2390,9 @@ const batchInsertRecords = async (records) => {
     const batch = recordsWithUserId.slice(i, i + batchSize)
     const startRow = i + 2 // 记录从第2行开始（第1行是标题）
     const endRow = Math.min(i + batchSize + 1, records.length + 1)
-    
+
     try {
-      const { error } = await supabase.from('balance_items').insert(batch)
+      const {error} = await supabase.from('balance_items').insert(batch)
       if (error) {
         throw new Error(`第${startRow}行至第${endRow}行导入失败: ${error.message}`)
       }
@@ -2391,17 +2424,17 @@ const downloadTemplate = () => {
       "描述": "购买生活用品"
     }
   ]
-  
+
   // 创建工作簿和单个工作表
   const wb = XLSX.utils.book_new()
   const ws = XLSX.utils.json_to_sheet(templateData)
-  
+
   // 添加工作表到工作簿
   XLSX.utils.book_append_sheet(wb, ws, '资金记录模板')
-  
+
   // 下载文件
   XLSX.writeFile(wb, '资金记录导入模板.xlsx')
-  
+
   // 显示成功消息
   message.success('模板下载成功')
 }
@@ -2424,27 +2457,27 @@ const resetFilters = () => {
 
 // 实时筛选：当筛选条件变化时，自动应用筛选
 watch(
-  [selectedCategory, selectedSubcategory, selectedDate, selectedTimeRange],
-  () => {
-    // 筛选逻辑已在computed属性中实现，这里可以添加额外的逻辑
-  }
+    [selectedCategory, selectedSubcategory, selectedDate, selectedTimeRange],
+    () => {
+      // 筛选逻辑已在computed属性中实现，这里可以添加额外的逻辑
+    }
 )
 
 const handleAddItem = async (formData) => {
   try {
-    const { data, error } = await supabase
-      .from('balance_items')
-      .insert({
-        subcategory_id: formData.subcategory_id,
-        amount: formData.amount,
-        record_date: formData.record_date,
-        description: formData.description
-      })
-      .select()
-      .single()
-    
+    const {data, error} = await supabase
+        .from('balance_items')
+        .insert({
+          subcategory_id: formData.subcategory_id,
+          amount: formData.amount,
+          record_date: formData.record_date,
+          description: formData.description
+        })
+        .select()
+        .single()
+
     if (error) throw error
-    
+
     items.value.unshift(data)
     showAddItemModal.value = false
     message.success('资金条目新增成功')
@@ -2455,31 +2488,31 @@ const handleAddItem = async (formData) => {
 }
 
 const handleEditItem = (item) => {
-  editingItem.value = { ...item }
+  editingItem.value = {...item}
   showEditItemModal.value = true
 }
 
 const handleUpdateItem = async (formData) => {
   try {
-    const { data, error } = await supabase
-      .from('balance_items')
-      .update({
-        subcategory_id: formData.subcategory_id,
-        amount: formData.amount,
-        record_date: formData.record_date,
-        description: formData.description
-      })
-      .eq('id', formData.id)
-      .select()
-      .single()
-    
+    const {data, error} = await supabase
+        .from('balance_items')
+        .update({
+          subcategory_id: formData.subcategory_id,
+          amount: formData.amount,
+          record_date: formData.record_date,
+          description: formData.description
+        })
+        .eq('id', formData.id)
+        .select()
+        .single()
+
     if (error) throw error
-    
+
     const index = items.value.findIndex(item => item.id === formData.id)
     if (index !== -1) {
       items.value[index] = data
     }
-    
+
     showEditItemModal.value = false
     editingItem.value = null
     message.success('资金条目更新成功')
@@ -2490,24 +2523,24 @@ const handleUpdateItem = async (formData) => {
 }
 
 const handleViewItem = (item) => {
-  viewingItem.value = { ...item }
+  viewingItem.value = {...item}
   showViewItemModal.value = true
 }
 
 const handleDeleteItem = (item) => {
-  deletingItem.value = { ...item }
+  deletingItem.value = {...item}
   showDeleteConfirm.value = true
 }
 
 const confirmDelete = async () => {
   try {
-    const { error } = await supabase
-      .from('balance_items')
-      .delete()
-      .eq('id', deletingItem.value.id)
-    
+    const {error} = await supabase
+        .from('balance_items')
+        .delete()
+        .eq('id', deletingItem.value.id)
+
     if (error) throw error
-    
+
     items.value = items.value.filter(item => item.id !== deletingItem.value.id)
     showDeleteConfirm.value = false
     deletingItem.value = null
@@ -2521,58 +2554,58 @@ const confirmDelete = async () => {
 const handlePrimaryCategoriesUpdate = async (updatedCategories) => {
   try {
     // 找出新增的分类
-    const newCategories = updatedCategories.filter(c => 
-      !categories.value.some(existing => existing.id === c.id)
+    const newCategories = updatedCategories.filter(c =>
+        !categories.value.some(existing => existing.id === c.id)
     )
-    
+
     // 找出修改的分类
-    const updatedExistingCategories = updatedCategories.filter(c => 
-      categories.value.some(existing => existing.id === c.id && existing.name !== c.name)
+    const updatedExistingCategories = updatedCategories.filter(c =>
+        categories.value.some(existing => existing.id === c.id && existing.name !== c.name)
     )
-    
+
     // 找出删除的分类
-    const deletedCategories = categories.value.filter(c => 
-      !updatedCategories.some(updated => updated.id === c.id)
+    const deletedCategories = categories.value.filter(c =>
+        !updatedCategories.some(updated => updated.id === c.id)
     )
-    
+
     // 执行新增操作
     for (const category of newCategories) {
-      const { error } = await supabase
-        .from('balance_categories')
-        .insert({
-          name: category.name,
-          description: category.description
-        })
-        .select()
-        .single()
-      
+      const {error} = await supabase
+          .from('balance_categories')
+          .insert({
+            name: category.name,
+            description: category.description
+          })
+          .select()
+          .single()
+
       if (error) throw error
     }
-    
+
     // 执行更新操作
     for (const category of updatedExistingCategories) {
-      const { error } = await supabase
-        .from('balance_categories')
-        .update({
-          name: category.name,
-          description: category.description,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', category.id)
-      
+      const {error} = await supabase
+          .from('balance_categories')
+          .update({
+            name: category.name,
+            description: category.description,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', category.id)
+
       if (error) throw error
     }
-    
+
     // 执行删除操作
     for (const category of deletedCategories) {
-      const { error } = await supabase
-        .from('balance_categories')
-        .delete()
-        .eq('id', category.id)
-      
+      const {error} = await supabase
+          .from('balance_categories')
+          .delete()
+          .eq('id', category.id)
+
       if (error) throw error
     }
-    
+
     // 更新本地状态
     categories.value = updatedCategories
     message.success('一级分类管理成功')
@@ -2587,60 +2620,60 @@ const handlePrimaryCategoriesUpdate = async (updatedCategories) => {
 const handleSecondaryCategoriesUpdate = async (updatedSubcategories) => {
   try {
     // 找出新增的分类
-    const newSubcategories = updatedSubcategories.filter(s => 
-      !subcategories.value.some(existing => existing.id === s.id)
+    const newSubcategories = updatedSubcategories.filter(s =>
+        !subcategories.value.some(existing => existing.id === s.id)
     )
-    
+
     // 找出修改的分类
-    const updatedExistingSubcategories = updatedSubcategories.filter(s => 
-      subcategories.value.some(existing => existing.id === s.id && (existing.name !== s.name || existing.category_id !== s.category_id))
+    const updatedExistingSubcategories = updatedSubcategories.filter(s =>
+        subcategories.value.some(existing => existing.id === s.id && (existing.name !== s.name || existing.category_id !== s.category_id))
     )
-    
+
     // 找出删除的分类
-    const deletedSubcategories = subcategories.value.filter(s => 
-      !updatedSubcategories.some(updated => updated.id === s.id)
+    const deletedSubcategories = subcategories.value.filter(s =>
+        !updatedSubcategories.some(updated => updated.id === s.id)
     )
-    
+
     // 执行新增操作
     for (const subcategory of newSubcategories) {
-      const { error } = await supabase
-        .from('balance_subcategories')
-        .insert({
-          category_id: subcategory.category_id,
-          name: subcategory.name,
-          description: subcategory.description
-        })
-        .select()
-        .single()
-      
+      const {error} = await supabase
+          .from('balance_subcategories')
+          .insert({
+            category_id: subcategory.category_id,
+            name: subcategory.name,
+            description: subcategory.description
+          })
+          .select()
+          .single()
+
       if (error) throw error
     }
-    
+
     // 执行更新操作
     for (const subcategory of updatedExistingSubcategories) {
-      const { error } = await supabase
-        .from('balance_subcategories')
-        .update({
-          category_id: subcategory.category_id,
-          name: subcategory.name,
-          description: subcategory.description,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', subcategory.id)
-      
+      const {error} = await supabase
+          .from('balance_subcategories')
+          .update({
+            category_id: subcategory.category_id,
+            name: subcategory.name,
+            description: subcategory.description,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', subcategory.id)
+
       if (error) throw error
     }
-    
+
     // 执行删除操作
     for (const subcategory of deletedSubcategories) {
-      const { error } = await supabase
-        .from('balance_subcategories')
-        .delete()
-        .eq('id', subcategory.id)
-      
+      const {error} = await supabase
+          .from('balance_subcategories')
+          .delete()
+          .eq('id', subcategory.id)
+
       if (error) throw error
     }
-    
+
     // 更新本地状态
     subcategories.value = updatedSubcategories
     message.success('二级分类管理成功')
@@ -2876,8 +2909,9 @@ onMounted(() => {
 
 /* 主色调（查看） */
 :deep(.icon-btn-primary) {
-  color:#18a058;
+  color: #18a058;
 }
+
 :deep(.icon-btn-primary:hover) {
   background-color: #14874b;
   box-shadow: 0 2px 8px rgba(24, 160, 88, 0.3);
@@ -2888,6 +2922,7 @@ onMounted(() => {
 :deep(.icon-btn-info) {
   color: #2080f0;
 }
+
 :deep(.icon-btn-info:hover) {
   background-color: #1870e0;
   box-shadow: 0 2px 8px rgba(32, 128, 240, 0.3);
@@ -2898,6 +2933,7 @@ onMounted(() => {
 :deep(.icon-btn-error) {
   color: #f53f3f;
 }
+
 :deep(.icon-btn-error:hover) {
   background-color: #e03535;
   box-shadow: 0 2px 8px rgba(245, 63, 63, 0.3);
@@ -3014,7 +3050,7 @@ onMounted(() => {
 /* 图表容器样式优化 */
 .chart-section {
   margin-bottom: 30px;
-  width: 100%;          /* 强制容器宽度100% */
+  width: 100%; /* 强制容器宽度100% */
   box-sizing: border-box; /* 确保padding不影响宽度计算 */
 }
 
@@ -3066,92 +3102,92 @@ onMounted(() => {
   .balance-container {
     padding: 20px 15px;
   }
-  
+
   .balance-container h2 {
     font-size: 1.5rem;
     margin-bottom: 20px;
   }
-  
+
   .action-buttons {
     flex-direction: column;
     gap: 10px;
     align-items: stretch;
   }
-  
+
   .action-buttons :deep(.n-button) {
     width: 100%;
   }
-  
+
   .filter-section {
     flex-direction: column;
     gap: 10px;
     padding: 15px;
   }
-  
+
   .filter-select {
     width: 100%;
     max-width: 100%;
     min-width: auto;
   }
-  
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
-  
+
   .statistics-section :deep(.n-card) {
     padding: 15px;
   }
-  
+
   .stat-item {
     padding: 20px 15px;
   }
-  
+
   .stat-item :deep(.n-statistic-value) {
     font-size: 1.5rem;
   }
-  
+
   .actions-cell {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .detail-label {
     display: block;
     width: 100%;
     margin-bottom: 5px;
   }
-  
+
   .form-row {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .form-actions {
     margin-left: 0;
     margin-top: 15px;
     align-self: flex-end;
   }
-  
+
   .chart-section :deep(.n-card) {
     padding: 10px;
   }
-  
+
   /* 表格响应式设计 */
   .items-list :deep(.n-data-table) {
     font-size: 0.85rem;
   }
-  
+
   .items-list :deep(.n-data-table-thead-th),
   .items-list :deep(.n-data-table-tbody-td) {
     padding: 8px 10px;
   }
-  
+
   /* 统计表格响应式设计 */
   .amounts-table-section :deep(.n-data-table) {
     font-size: 0.85rem;
   }
-  
+
   /* 图表高度响应式调整 */
   .chart-section :deep(.v-chart) {
     height: 300px !important;
@@ -3164,88 +3200,88 @@ onMounted(() => {
     padding: 15px 10px;
     min-height: calc(100vh - 100px);
   }
-  
+
   .balance-container h2 {
     font-size: 1.3rem;
     margin-bottom: 15px;
   }
-  
+
   .action-buttons {
     margin-bottom: 20px;
   }
-  
+
   .filter-section {
     margin-bottom: 20px;
     padding: 12px;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 12px;
   }
-  
+
   .stat-item {
     padding: 15px 12px;
   }
-  
+
   .stat-item :deep(.n-statistic-value) {
     font-size: 1.3rem;
   }
-  
+
   .stat-item :deep(.n-statistic-suffix) {
     font-size: 1rem;
   }
-  
+
   .statistics-section {
     margin-bottom: 20px;
   }
-  
+
   .items-list {
     margin-bottom: 20px;
   }
-  
+
   .chart-section {
     margin-bottom: 20px;
   }
-  
+
   /* 表格响应式设计 - 允许横向滚动 */
   .items-list :deep(.n-card) {
     overflow-x: auto;
   }
-  
+
   .items-list :deep(.n-data-table-wrapper) {
     overflow-x: auto;
     width: 100%;
   }
-  
+
   .amounts-table-section :deep(.n-card) {
     overflow-x: auto;
   }
-  
+
   .amounts-table-section :deep(.n-data-table-wrapper) {
     overflow-x: auto;
     width: 100%;
   }
-  
+
   /* 图表高度进一步调整 */
   .chart-section :deep(.v-chart) {
     height: 250px !important;
   }
-  
+
   /* 批量导入样式调整 */
   .batch-import-container {
     padding: 0 10px;
   }
-  
+
   /* 详情页样式调整 */
   .detail-row {
     padding: 8px;
   }
-  
+
   .detail-label {
     font-size: 0.9rem;
   }
-  
+
   .detail-value {
     font-size: 0.9rem;
   }
@@ -3256,24 +3292,24 @@ onMounted(() => {
   .balance-container {
     padding: 10px 8px;
   }
-  
+
   .action-buttons {
     gap: 8px;
   }
-  
+
   .filter-section {
     gap: 8px;
     padding: 10px;
   }
-  
+
   .stats-grid {
     gap: 10px;
   }
-  
+
   .stat-item {
     padding: 12px 10px;
   }
-  
+
   /* 图表高度最小调整 */
   .chart-section :deep(.v-chart) {
     height: 200px !important;
