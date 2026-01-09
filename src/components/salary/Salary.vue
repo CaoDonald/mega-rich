@@ -353,7 +353,7 @@ use([
   DataZoomComponent,
   CanvasRenderer
 ])
-import {supabase} from '../supabase'
+import {supabase} from '../../supabase.js'
 import {
   NButton,
   NCard,
@@ -384,8 +384,8 @@ import {
   CaretDownOutline
 } from '@vicons/ionicons5'
 
-import AddEditRecordForm from './AddEditRecordForm.vue'
-import RecordDetail from './RecordDetail.vue'
+import AddEditRecordForm from './sub/AddEditRecordForm.vue'
+import RecordDetail from './sub/RecordDetail.vue'
 
 // 基础状态
 const message = useMessage()

@@ -94,7 +94,7 @@
 
 <script setup>
 import {ref, reactive, inject, onMounted} from 'vue'
-import {supabase} from '../supabase'
+import {supabase} from '../../supabase.js'
 import { useMessage } from 'naive-ui'
 
 // 使用 App.vue 提供的页面切换方法

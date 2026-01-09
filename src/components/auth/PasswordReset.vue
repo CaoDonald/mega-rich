@@ -109,7 +109,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, inject, computed } from 'vue'
-import { supabase } from '../supabase'
+import { supabase } from '../../supabase.js'
 import { useMessage } from 'naive-ui'
 
 const navigateTo = inject('navigateTo')

@@ -396,7 +396,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch, h } from 'vue'
-import { supabase } from '../supabase'
+import { supabase } from '../../supabase.js'
 import { useMessage, NIcon, NButton } from 'naive-ui'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -439,9 +439,9 @@ import {
   CloudUploadOutline,
   CloudDownloadOutline
 } from '@vicons/ionicons5'
-import AddEditItemForm from './AddEditItemForm.vue'
-import ItemDetail from './ItemDetail.vue'
-import CategoryManagerModal from './CategoryManagerModal.vue'
+import AddEditItemForm from './sub/AddEditItemForm.vue'
+import ItemDetail from './sub/ItemDetail.vue'
+import CategoryManagerModal from './sub/CategoryManagerModal.vue'
 
 // 获取消息实例
 const message = useMessage()

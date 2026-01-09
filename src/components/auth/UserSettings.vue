@@ -127,7 +127,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, inject, computed, watch } from 'vue'
-import { supabase } from '../supabase'
+import { supabase } from '../../supabase.js'
 import { useMessage, NSpin } from 'naive-ui'
 
 const navigateTo = inject('navigateTo')
