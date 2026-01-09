@@ -529,49 +529,12 @@ const commonChartConfig = {
     // 进一步提高 zlevel 数值（避开其他元素的层级冲突）
     zlevel: 200,
     // 开启边界约束
-    confine: false,
+    confine: true,
     // 取消挂载到body
-    appendToBody: true,
+    appendToBody: false,
     textStyle: {
       fontSize: '11px',
       zlevel: 200
-    },
-    // 修复后的position函数：增加完整的空值判断
-    position: function (point, params, dom, rect, size) {
-      // 核心修复1：对所有关键参数做空值判断
-      if (!point || !rect || !size) {
-        // 返回默认位置（图表中心），避免报错
-        return ['50%', '50%'];
-      }
-
-      // 核心修复2：解构赋值并增加默认值
-      const [xPoint, yPoint] = point;
-      const { x: rectX, y: rectY, width: rectWidth, height: rectHeight } = rect;
-      const { contentWidth: tipWidth, contentHeight: tipHeight } = size;
-
-      // 移动端适配：默认显示在点击位置右上方
-      let x = xPoint + 10;
-      let y = yPoint - 10;
-
-      // 边界检查：避免tooltip超出图表容器
-      // 右侧超出
-      if (x + tipWidth > rectX + rectWidth) {
-        x = xPoint - tipWidth - 10;
-      }
-      // 左侧超出
-      if (x < rectX) {
-        x = rectX + 10;
-      }
-      // 上方超出
-      if (y < rectY) {
-        y = yPoint + 10;
-      }
-      // 下方超出
-      if (y + tipHeight > rectY + rectHeight) {
-        y = yPoint - tipHeight - 10;
-      }
-
-      return [x, y];
     }
   },
   legend: {
