@@ -285,7 +285,7 @@
             <!--            <n-skeleton v-if="loading" animated text :rows="5" style="height: 250px; width: 100%;" /> -->
             <v-chart
             :option="assetPieOption"
-            :style="{ height: '350px', width: '100%' }"
+            :style="{ height: '300px', width: '100%' }"
             />
           </div>
 
@@ -294,7 +294,7 @@
 <!--            <n-skeleton v-if="loading" animated text :rows="5" style="height: 250px; width: 100%;"/>-->
             <v-chart
                 :option="liabilityPieOption"
-                :style="{ height: '350px', width: '100%' }"
+                :style="{ height: '300px', width: '100%' }"
             />
           </div>
         </div>
@@ -705,12 +705,36 @@ const pieChartCommonConfig = {
       center: ['50%', '60%'],
       avoidLabelOverlap: true, // 开启标签重叠避让
       type: 'pie',
-      radius: ['20%', '40%'],
+      radius: ['0%', '35%'],
       itemStyle: {
         borderRadius: 4,
         borderColor: '#fff',
         borderWidth: 1
       },
+      label: {
+        show: true,
+        formatter: '{b}\n{d}%',
+        fontSize: '10px',
+        position: 'inside'
+      },
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: '10px',
+          fontWeight: 'bold'
+        }
+      },
+      labelLine: {
+        show: false, // 移动端隐藏连接线，进一步节省空间
+        lineStyle: {
+          width: 0.5
+        },
+        length: 8,
+        length2: 3,
+        smooth: 0.2
+      }
+    },
+    {
       label: {
         show: true,
         formatter: '{b}\n{d}%',
@@ -731,7 +755,12 @@ const pieChartCommonConfig = {
         length: 8,
         length2: 3,
         smooth: 0.2
-      }
+      },
+      minAngle: 5, // 最小扇区
+      minShowLabelAngle: 5, // 最小呈现扇区
+      radius: ['40%', '60%'], // 外层二级分类环形
+      center: ['50%', '60%'],
+      type: 'pie',
     }
   ]
 }
@@ -1380,11 +1409,13 @@ const currentMonthItems = computed(() => {
   })
 })
 
-// 资产占比数据
+// 资产占比数据 - 嵌套饼图
 const assetPieData = computed(() => {
-  // 按二级分类分组计算资产金额（正数）
-  const categoryMap = new Map()
+  // 按一级分类和二级分类分组计算资产金额（正数）
+  const primaryCategoryMap = new Map()
+  const secondaryCategoryMap = new Map()
 
+  // 第一遍遍历：计算一级分类和二级分类金额
   currentMonthItems.value
       .filter(item => item.amount > 0)
       .forEach(item => {
@@ -1395,23 +1426,34 @@ const assetPieData = computed(() => {
         const category = categories.value.find(c => c.id === subcategory.category_id)
         if (!category) return
 
-        // const categoryName = `${category.name} - ${subcategory.name}`
-        const categoryName = `${subcategory.name}`
-        const currentAmount = categoryMap.get(categoryName) || 0
-        categoryMap.set(categoryName, currentAmount + item.amount)
+        // 计算一级分类金额
+        const primaryAmount = primaryCategoryMap.get(category.name) || 0
+        primaryCategoryMap.set(category.name, primaryAmount + item.amount)
+
+        // 计算二级分类金额，使用一级分类+二级分类作为键
+        const secondaryKey = `${subcategory.name}`
+        const secondaryAmount = secondaryCategoryMap.get(secondaryKey) || 0
+        secondaryCategoryMap.set(secondaryKey, secondaryAmount + item.amount)
       })
 
   // 转换为饼图数据格式
-  return Array.from(categoryMap.entries())
-      .map(([name, value]) => ({name, value: parseFloat(value.toFixed(2))}))
-      .sort((a, b) => b.value - a.value)
+  return {
+    primary: Array.from(primaryCategoryMap.entries())
+        .map(([name, value]) => ({name, value: parseFloat(value.toFixed(2))}))
+        .sort((a, b) => b.value - a.value),
+    secondary: Array.from(secondaryCategoryMap.entries())
+        .map(([name, value]) => ({name, value: parseFloat(value.toFixed(2))}))
+        .sort((a, b) => b.value - a.value)
+  }
 })
 
-// 负债占比数据
+// 负债占比数据 - 嵌套饼图
 const liabilityPieData = computed(() => {
-  // 按二级分类分组计算负债金额（负数，取绝对值）
-  const categoryMap = new Map()
+  // 按一级分类和二级分类分组计算负债金额（负数，取绝对值）
+  const primaryCategoryMap = new Map()
+  const secondaryCategoryMap = new Map()
 
+  // 第一遍遍历：计算一级分类和二级分类金额
   currentMonthItems.value
       .filter(item => item.amount < 0)
       .forEach(item => {
@@ -1422,17 +1464,27 @@ const liabilityPieData = computed(() => {
         const category = categories.value.find(c => c.id === subcategory.category_id)
         if (!category) return
 
-        const categoryName = `${subcategory.name}`
-        const currentAmount = categoryMap.get(categoryName) || 0
-        categoryMap.set(categoryName, currentAmount + Math.abs(item.amount))
+        // 计算一级分类金额（取绝对值）
+        const primaryAmount = primaryCategoryMap.get(category.name) || 0
+        primaryCategoryMap.set(category.name, primaryAmount + Math.abs(item.amount))
+
+        // 计算二级分类金额，使用一级分类+二级分类作为键
+        const secondaryKey = `${subcategory.name}`
+        const secondaryAmount = secondaryCategoryMap.get(secondaryKey) || 0
+        secondaryCategoryMap.set(secondaryKey, secondaryAmount + Math.abs(item.amount))
       })
 
   // 转换为饼图数据格式
-  return Array.from(categoryMap.entries())
-      .map(([name, value]) => ({name, value: parseFloat(value.toFixed(2))}))
-      .sort((a, b) => b.value - a.value)
+  return {
+    primary: Array.from(primaryCategoryMap.entries())
+        .map(([name, value]) => ({name, value: parseFloat(value.toFixed(2))}))
+        .sort((a, b) => b.value - a.value),
+    secondary: Array.from(secondaryCategoryMap.entries())
+        .map(([name, value]) => ({name, value: parseFloat(value.toFixed(2))}))
+        .sort((a, b) => b.value - a.value)
+  }
 })
-// 资产占比饼图配置
+// 资产占比饼图配置 - 嵌套饼图
 const assetPieOption = computed(() => {
   return {
     title: {
@@ -1444,14 +1496,17 @@ const assetPieOption = computed(() => {
     series: [
       {
         ...pieChartCommonConfig.series[0],
-        data: assetPieData.value,
-        name: '资产'
+        data: assetPieData.value.primary,
+      },
+      {
+        ...pieChartCommonConfig.series[1],
+        data: assetPieData.value.secondary,
       }
     ]
   }
 })
 
-// 负债占比饼图配置
+// 负债占比饼图配置 - 嵌套饼图
 const liabilityPieOption = computed(() => {
   return {
     title: {
@@ -1463,8 +1518,11 @@ const liabilityPieOption = computed(() => {
     series: [
       {
         ...pieChartCommonConfig.series[0],
-        data: liabilityPieData.value,
-        name: '负债'
+        data: liabilityPieData.value.primary,
+      },
+      {
+        ...pieChartCommonConfig.series[1],
+        data: liabilityPieData.value.secondary,
       }
     ]
   }
@@ -2954,15 +3012,15 @@ onMounted(() => {
 .pie-charts-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  margin-top: 20px;
+  gap: 5px;
+  margin-top: 10px;
 }
 
 .pie-chart-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 15px;
+  padding: 5px;
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: var(--custom-border-radius);
   border: var(--custom-border);
