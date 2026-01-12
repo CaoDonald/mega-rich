@@ -72,7 +72,7 @@
     <!-- 统计信息 -->
     <div class="statistics-section">
       <n-card size="small">
-          <h3>统计信息</h3>
+        <h3>统计信息</h3>
         <div class="stats-grid">
           <div class="stat-item">
             <n-statistic label="总金额" :value="totalAmount">
@@ -96,35 +96,48 @@
             </n-statistic>
           </div>
           <div class="stat-item">
-            <n-statistic label="平均年薪" :value="averageAnnualSalary"  suffix="元">
+            <n-statistic label="平均年薪" :value="averageAnnualSalary" suffix="元">
               <template #suffix>
                 元
               </template>
             </n-statistic>
           </div>
         </div>
-
-        <!-- 主图表容器 -->
-        <div class="chart-container">
-          <div ref="chartRef" class="chart" :style="{ width: '100%', height: chartHeight }"></div>
-        </div>
-
-        <!-- 面积图容器 -->
-        <div class="chart-container" style="margin-top: 30px;">
-          <div ref="areaChartRef" class="chart" :style="{ width: '100%', height: chartHeight }"></div>
-        </div>
-
-        <!-- 年度收入柱状图容器 -->
-        <div class="chart-container" style="margin-top: 30px;">
-          <div ref="annualBarChartRef" class="chart" :style="{ width: '100%', height: chartHeight }"></div>
-        </div>
-
-        <!-- 年维度月均工资图表容器 -->
-        <div class="chart-container" style="margin-top: 30px;">
-          <div ref="annualAverageSalaryChartRef" class="chart" :style="{ width: '100%', height: chartHeight }"></div>
-        </div>
       </n-card>
     </div>
+
+    <!-- 主图表容器 -->
+    <!-- 一级分类资金变化趋势 -->
+    <div class="items-list">
+      <n-card size="small">
+        <v-chart :option="chartOption" :style="{ width: '100%', height: chartHeight }"></v-chart>
+      </n-card>
+    </div>
+
+    <!-- 面积图容器 -->
+    <!-- 一级分类资金变化趋势 -->
+    <div class="items-list">
+      <n-card size="small">
+        <v-chart :option="areaChartOption" :style="{ width: '100%', height: chartHeight }"></v-chart>
+      </n-card>
+    </div>
+
+    <!-- 年度收入柱状图容器 -->
+    <!-- 一级分类资金变化趋势 -->
+    <div class="items-list">
+      <n-card size="small">
+        <v-chart :option="annualBarChartOption" :style="{ width: '100%', height: chartHeight }"></v-chart>
+      </n-card>
+    </div>
+
+    <!-- 年维度月均工资图表容器 -->
+    <!-- 一级分类资金变化趋势 -->
+    <div class="items-list">
+      <n-card size="small">
+        <v-chart :option="annualAverageSalaryChartOption" :style="{ width: '100%', height: chartHeight }"></v-chart>
+      </n-card>
+    </div>
+
 
     <!-- 新增记录弹窗 -->
     <n-modal
@@ -290,8 +303,8 @@ import {
 
 import AddEditRecordForm from './sub/AddEditRecordForm.vue'
 import RecordDetail from './sub/RecordDetail.vue'
-import { labelWidth,valueWidth,percentWidth } from '../../utils/TableConfig.js'
-import { commonChartConfig, pieChartCommonConfig} from '../../utils/ChartConfig.js'
+import {labelWidth, valueWidth, percentWidth} from '../../utils/TableConfig.js'
+import {commonChartConfig, pieChartCommonConfig} from '../../utils/ChartConfig.js'
 import VChart from "vue-echarts";
 
 // 基础状态
@@ -302,35 +315,8 @@ const selectedType = ref(null)
 const selectedDate = ref(null)
 
 // 图表相关状态
-const chartRef = ref(null)
-const chartInstance = ref(null)
-const areaChartRef = ref(null)
-const areaChartInstance = ref(null)
-const annualBarChartRef = ref(null)
-const annualBarChartInstance = ref(null)
-const annualAverageSalaryChartRef = ref(null)
-const annualAverageSalaryChartInstance = ref(null)
 const timeRange = ref('all') // 'all', '1y', '3y', 'thisYear'
-const chartHeight = ref('400px')
-
-// 根据屏幕宽度动态调整图表高度
-const updateChartHeight = () => {
-  if (window.innerWidth < 768) {
-    chartHeight.value = '300px'
-  } else if (window.innerWidth < 480) {
-    chartHeight.value = '250px'
-  } else if (window.innerWidth < 360) {
-    chartHeight.value = '220px'
-  } else {
-    chartHeight.value = '400px'
-  }
-
-  // 更新所有图表实例的尺寸
-  chartInstance.value?.resize()
-  areaChartInstance.value?.resize()
-  annualBarChartInstance.value?.resize()
-}
-
+const chartHeight = ref('350px')
 
 
 // 弹窗状态
@@ -360,11 +346,11 @@ const typeOptions = [
 // 计算属性
 const rangeOptions = [
   {label: '全部', value: 'all'},
-      {label: '今年', value: 'thisYear'},
-      {label: '上一年', value: 'lastYear'},
-      {label: '近一年', value: '1y'},
-      {label: '上三年', value: 'last3Years'},
-      {label: '近三年', value: '3y'},
+  {label: '今年', value: 'thisYear'},
+  {label: '上一年', value: 'lastYear'},
+  {label: '近一年', value: '1y'},
+  {label: '上三年', value: 'last3Years'},
+  {label: '近三年', value: '3y'},
 ]
 
 const filteredRecords = computed(() => {
@@ -752,26 +738,8 @@ const chartData = computed(() => {
   }
 })
 
-// 初始化图表
-const initChart = () => {
-  if (!chartRef.value) return
-
-  // 销毁已有实例
-  if (chartInstance.value) {
-    chartInstance.value.dispose()
-  }
-
-  // 创建新实例
-  chartInstance.value = echarts.init(chartRef.value)
-
-  // 更新图表
-  updateChart()
-}
-
-// 更新图表
-const updateChart = () => {
-  if (!chartInstance.value) return
-
+// 主图表配置
+const chartOption = computed(() => {
   const {months, amounts, growthData, yoyData, momData, cumulativeTotalData, cumulativeThisYearData} = chartData.value
 
   // 设置y轴配置
@@ -820,7 +788,7 @@ const updateChart = () => {
     }
   }
 
-  const option = {
+  return {
     tooltip: commonChartConfig.tooltip,
     legend: {
       ...commonChartConfig.legend,
@@ -883,68 +851,14 @@ const updateChart = () => {
       }
     ]
   }
-
-  chartInstance.value.setOption(option)
-}
-
-// 监听记录变化，更新图表
-watch(records, () => {
-  updateChart()
-  updateAreaChart()
-  updateAnnualBarChart()
-  updateAnnualAverageSalaryChart()
-}, {deep: true})
-
-// 监听时间范围变化，更新图表
-watch(timeRange, () => {
-  updateChart()
-  updateAreaChart()
-  updateAnnualBarChart()
-  updateAnnualAverageSalaryChart()
 })
 
-// 监听窗口大小变化，调整图表
-const handleResize = () => {
-  chartInstance.value?.resize()
-  areaChartInstance.value?.resize()
-  annualBarChartInstance.value?.resize()
-  annualAverageSalaryChartInstance.value?.resize()
-}
 
-
-// 初始化面积图
-const initAreaChart = () => {
-  if (!areaChartRef.value) return
-
-  // 销毁已有实例
-  if (areaChartInstance.value) {
-    areaChartInstance.value.dispose()
-  }
-
-  areaChartInstance.value = echarts.init(areaChartRef.value)
-  updateAreaChart()
-}
-
-// 初始化年度收入柱状图
-const initAnnualBarChart = () => {
-  if (!annualBarChartRef.value) return
-
-  // 销毁已有实例
-  if (annualBarChartInstance.value) {
-    annualBarChartInstance.value.dispose()
-  }
-
-  annualBarChartInstance.value = echarts.init(annualBarChartRef.value)
-  updateAnnualBarChart()
-}
-
-// 更新面积图
-const updateAreaChart = () => {
-  if (!areaChartInstance.value) return
-
+// 面积图配置
+const areaChartOption = computed(() => {
   const {months, cumulativeTotalData, cumulativeThisYearData} = chartData.value
 
-  const option = {
+  return {
     ...commonChartConfig,
     legend: {
       ...commonChartConfig.legend,
@@ -1038,21 +952,17 @@ const updateAreaChart = () => {
       }
     ]
   }
+})
 
-  areaChartInstance.value.setOption(option)
-}
-
-// 更新年度收入柱状图
-const updateAnnualBarChart = () => {
-  if (!annualBarChartInstance.value) return
-
+// 年度收入柱状图配置
+const annualBarChartOption = computed(() => {
   const {annualData} = chartData.value
 
   // 提取年度数据
   const years = annualData.map(item => item.year)
   const amounts = annualData.map(item => item.amount)
 
-  const option = {
+  return {
     ...commonChartConfig,
     grid: {
       ...commonChartConfig.grid,
@@ -1138,34 +1048,17 @@ const updateAnnualBarChart = () => {
       }
     ]
   }
+})
 
-  annualBarChartInstance.value.setOption(option)
-}
-
-// 初始化年维度月均工资图表
-const initAnnualAverageSalaryChart = () => {
-  if (!annualAverageSalaryChartRef.value) return
-
-  // 销毁已有实例
-  if (annualAverageSalaryChartInstance.value) {
-    annualAverageSalaryChartInstance.value.dispose()
-  }
-
-  annualAverageSalaryChartInstance.value = echarts.init(annualAverageSalaryChartRef.value)
-  updateAnnualAverageSalaryChart()
-}
-
-// 更新年维度月均工资图表
-const updateAnnualAverageSalaryChart = () => {
-  if (!annualAverageSalaryChartInstance.value) return
-
+// 年维度月均工资图表配置
+const annualAverageSalaryChartOption = computed(() => {
   const {annualAverageSalary} = chartData.value
 
   // 提取年维度月均工资数据
   const years = annualAverageSalary.map(item => item.year)
   const averageSalaries = annualAverageSalary.map(item => item.average)
 
-  const option = {
+  return {
     ...commonChartConfig,
     grid: {
       ...commonChartConfig.grid,
@@ -1251,38 +1144,13 @@ const updateAnnualAverageSalaryChart = () => {
       }
     ]
   }
-
-  annualAverageSalaryChartInstance.value.setOption(option)
-}
+})
 
 // 组件挂载时初始化
 onMounted(() => {
   console.log('组件挂载，加载数据')
   loadData()
-
-  // 初始化图表高度
-  updateChartHeight()
-
-  // 延迟初始化图表，确保DOM已渲染
-  setTimeout(() => {
-    initChart()
-    initAreaChart()
-    initAnnualBarChart()
-    initAnnualAverageSalaryChart()
-    window.addEventListener('resize', handleResize)
-    window.addEventListener('resize', updateChartHeight)
-  }, 100)
 })
-
-// 组件卸载时清理
-const cleanup = () => {
-  chartInstance.value?.dispose()
-  areaChartInstance.value?.dispose()
-  annualBarChartInstance.value?.dispose()
-  annualAverageSalaryChartInstance.value?.dispose()
-  window.removeEventListener('resize', handleResize)
-  window.removeEventListener('resize', updateChartHeight)
-}
 
 // 表格列配置（核心：操作列用render函数实现）
 const columns = [

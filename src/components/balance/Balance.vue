@@ -572,24 +572,6 @@ const customChartMin = ref(null)
 const customChartMax = ref(null)
 const showCustomLimitsForm = ref(false)
 
-// 根据屏幕宽度动态调整图表高度
-const updateChartHeight = () => {
-  if (window.innerWidth < 768) {
-    chartHeight.value = '300px'
-  }
-  if (window.innerWidth < 480) {
-    chartHeight.value = '250px'
-  }
-  if (window.innerWidth < 360) {
-    chartHeight.value = '220px'
-  }
-}
-
-// 监听窗口大小变化，动态调整图表高度
-window.addEventListener('resize', updateChartHeight)
-
-// 初始化图表高度
-updateChartHeight()
 
 // 按时间范围筛选后的月度数据
 const timeFilteredMonthlyStats = computed(() => {
@@ -2842,6 +2824,52 @@ onMounted(() => {
   .pie-charts-container {
     grid-template-columns: 1fr;
   }
+}
+
+.items-list {
+  margin-bottom: 30px;
+}
+
+.items-list :deep(.n-card) {
+  border-radius: var(--custom-border-radius);
+  box-shadow: var(--custom-box-shadow);
+  border: var(--custom-border);
+  overflow: hidden;
+}
+
+.items-list :deep(.n-data-table) {
+  font-size: 0.95rem;
+}
+
+.items-list :deep(.n-data-table-thead) {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.items-list :deep(.n-data-table-thead-th) {
+  font-weight: 600;
+  color: var(--custom-color);
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--custom-color-secondary);
+}
+
+.items-list :deep(.n-data-table-tbody-td) {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.items-list :deep(.n-data-table-tbody-tr:hover) {
+  background-color: rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+.items-list :deep(.n-data-table-td) {
+  color: var(--custom-color);
+}
+
+.items-list :deep(.n-pagination) {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
 }
 
 /* 操作列容器 */
