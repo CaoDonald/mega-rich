@@ -276,6 +276,42 @@
       </n-card>
     </div>
 
+    <!-- 数据占比卡片 -->
+    <div class="chart-section">
+      <n-card size="small">
+        <h3>资产负债占比</h3>
+        <div class="pie-charts-container">
+          <!-- 资产占比饼图 -->
+          <div class="pie-chart-wrapper">
+            <h4>资产占比</h4>
+            <n-skeleton v-if="loading" animated text :rows="5" style="height: 250px; width: 100%;" />
+            <v-chart
+                v-else-if="assetPieData.length > 0"
+                :option="assetPieOption"
+                :style="{ height: '250px', width: '100%' }"
+            />
+            <div v-else class="empty-chart-message">
+              <n-empty description="暂无资产数据" />
+            </div>
+          </div>
+
+          <!-- 负债占比饼图 -->
+          <div class="pie-chart-wrapper">
+            <h4>负债占比</h4>
+            <n-skeleton v-if="loading" animated text :rows="5" style="height: 250px; width: 100%;" />
+            <v-chart
+                v-else-if="liabilityPieData.length > 0"
+                :option="liabilityPieOption"
+                :style="{ height: '250px', width: '100%' }"
+            />
+            <div v-else class="empty-chart-message">
+              <n-empty description="暂无负债数据" />
+            </div>
+          </div>
+        </div>
+      </n-card>
+    </div>
+
     <!-- 新增资金条目弹窗 -->
     <n-modal
         v-model:show="showAddItemModal"
@@ -456,7 +492,7 @@ import {supabase} from '../../supabase.js'
 import {useMessage, NIcon, NButton} from 'naive-ui'
 import {use} from 'echarts/core'
 import {CanvasRenderer} from 'echarts/renderers'
-import {LineChart, BarChart} from 'echarts/charts'
+import {LineChart, BarChart, PieChart} from 'echarts/charts'
 import {
   TitleComponent,
   TooltipComponent,
@@ -472,6 +508,7 @@ use([
   CanvasRenderer,
   LineChart,
   BarChart,
+  PieChart,
   TitleComponent,
   TooltipComponent,
   LegendComponent,
@@ -1311,6 +1348,172 @@ const annualBarChartOption = computed(() => {
             ]
           }
         }
+      }
+    ]
+  }
+})
+
+// 当前选中月份的数据
+const currentMonthItems = computed(() => {
+  // 获取当前选中的月份
+  const selected = selectedDate.value ? new Date(selectedDate.value) : new Date()
+  const year = selected.getFullYear()
+  const month = selected.getMonth()
+  
+  // 根据月份过滤数据
+  return filteredItems.value.filter(item => {
+    const itemDate = new Date(item.record_date)
+    return itemDate.getFullYear() === year && itemDate.getMonth() === month
+  })
+})
+
+// 资产占比数据
+const assetPieData = computed(() => {
+  // 按二级分类分组计算资产金额（正数）
+  const categoryMap = new Map()
+  
+  currentMonthItems.value
+    .filter(item => item.amount > 0)
+    .forEach(item => {
+      const subcategoryId = item.subcategory_id
+      const subcategory = subcategories.value.find(s => s.id === subcategoryId)
+      if (!subcategory) return
+      
+      const category = categories.value.find(c => c.id === subcategory.category_id)
+      if (!category) return
+      
+      const categoryName = `${category.name} - ${subcategory.name}`
+      const currentAmount = categoryMap.get(categoryName) || 0
+      categoryMap.set(categoryName, currentAmount + item.amount)
+    })
+  
+  // 转换为饼图数据格式
+  return Array.from(categoryMap.entries())
+    .map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }))
+    .sort((a, b) => b.value - a.value)
+})
+
+// 负债占比数据
+const liabilityPieData = computed(() => {
+  // 按二级分类分组计算负债金额（负数，取绝对值）
+  const categoryMap = new Map()
+  
+  currentMonthItems.value
+    .filter(item => item.amount < 0)
+    .forEach(item => {
+      const subcategoryId = item.subcategory_id
+      const subcategory = subcategories.value.find(s => s.id === subcategoryId)
+      if (!subcategory) return
+      
+      const category = categories.value.find(c => c.id === subcategory.category_id)
+      if (!category) return
+      
+      const categoryName = `${category.name} - ${subcategory.name}`
+      const currentAmount = categoryMap.get(categoryName) || 0
+      categoryMap.set(categoryName, currentAmount + Math.abs(item.amount))
+    })
+  
+  // 转换为饼图数据格式
+  return Array.from(categoryMap.entries())
+    .map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }))
+    .sort((a, b) => b.value - a.value)
+})
+
+// 饼图通用配置
+const pieChartCommonConfig = {
+  tooltip: {
+    trigger: 'item',
+    formatter: '{b}: {c}元 ({d}%)',
+    textStyle: {
+      fontSize: '11px'
+    }
+  },
+  legend: {
+    orient: 'vertical',
+    right: 10,
+    top: 'center',
+    type: 'scroll',
+    textStyle: {
+      fontSize: '9px'
+    },
+    itemWidth: 8,
+    itemHeight: 8
+  },
+  series: [
+    {
+      type: 'pie',
+      radius: ['40%', '70%'],
+      avoidLabelOverlap: false,
+      itemStyle: {
+        borderRadius: 4,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
+      label: {
+        show: true,
+        formatter: '{b}\n{d}%',
+        fontSize: '10px'
+      },
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: '12px',
+          fontWeight: 'bold'
+        }
+      },
+      labelLine: {
+        show: true,
+        lineStyle: {
+          width: 1
+        }
+      }
+    }
+  ]
+}
+
+// 资产占比饼图配置
+const assetPieOption = computed(() => {
+  return {
+    title: {
+      text: '',
+      left: 'center',
+      top: 10,
+      textStyle: {
+        fontSize: '12px',
+        fontWeight: '500'
+      }
+    },
+    tooltip: pieChartCommonConfig.tooltip,
+    legend: pieChartCommonConfig.legend,
+    series: [
+      {
+        ...pieChartCommonConfig.series[0],
+        data: assetPieData.value,
+        name: '资产'
+      }
+    ]
+  }
+})
+
+// 负债占比饼图配置
+const liabilityPieOption = computed(() => {
+  return {
+    title: {
+      text: '',
+      left: 'center',
+      top: 10,
+      textStyle: {
+        fontSize: '12px',
+        fontWeight: '500'
+      }
+    },
+    tooltip: pieChartCommonConfig.tooltip,
+    legend: pieChartCommonConfig.legend,
+    series: [
+      {
+        ...pieChartCommonConfig.series[0],
+        data: liabilityPieData.value,
+        name: '负债'
       }
     ]
   }
@@ -2794,7 +2997,54 @@ onMounted(() => {
 .filter-select {
   min-width: 180px;
   flex: 1;
-  max-width: 250px;
+}
+
+/* 饼图容器样式 */
+.pie-charts-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.pie-chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: var(--custom-border-radius);
+  border: var(--custom-border);
+  transition: all 0.3s ease;
+}
+
+.pie-chart-wrapper:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.pie-chart-wrapper h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 15px 0;
+  color: var(--custom-color);
+  text-align: center;
+}
+
+.empty-chart-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 250px;
+  width: 100%;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .pie-charts-container {
+    grid-template-columns: 1fr;
+  }
 }
 
 .items-list {
