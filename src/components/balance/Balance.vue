@@ -84,10 +84,18 @@
         <h3>统计信息</h3>
         <div class="stats-grid">
           <div class="stat-item">
-            <n-statistic label="广义金额" :value="latestMonthStats.broadAmount" suffix="元"/>
+            <n-statistic label="广义金额" :value="latestMonthStats.broadAmount">
+              <template #suffix>
+                元
+              </template>
+            </n-statistic>
           </div>
           <div class="stat-item">
-            <n-statistic label="可支配金额" :value="latestMonthStats.disposableAmount" suffix="元"/>
+            <n-statistic label="可支配金额" :value="latestMonthStats.disposableAmount">
+              <template #suffix>
+                元
+              </template>
+            </n-statistic>
           </div>
           <div class="stat-item">
             <n-statistic
@@ -104,13 +112,15 @@
                   <TrendingDownOutline/>
                 </n-icon>
               </template>
+              <template #suffix>
+                元
+              </template>
             </n-statistic>
           </div>
           <div class="stat-item">
             <n-statistic
                 label="广义金额环比"
                 :value="latestMonthStats.broadGrowthRate"
-                suffix="%"
                 :value-style="{ color: latestMonthStats.broadGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
@@ -121,13 +131,15 @@
                   <TrendingDownOutline/>
                 </n-icon>
               </template>
+              <template #suffix>
+                %
+              </template>
             </n-statistic>
           </div>
           <div class="stat-item">
             <n-statistic
                 label="广义金额同比"
                 :value="latestMonthStats.broadYoyGrowthRate"
-                suffix="%"
                 :value-style="{ color: latestMonthStats.broadYoyGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
@@ -137,6 +149,9 @@
                 <n-icon v-else-if="latestMonthStats.broadYoyGrowthRate < 0">
                   <TrendingDownOutline/>
                 </n-icon>
+              </template>
+              <template #suffix>
+                %
               </template>
             </n-statistic>
           </div>
@@ -155,6 +170,9 @@
                   <TrendingDownOutline/>
                 </n-icon>
               </template>
+              <template #suffix>
+                元
+              </template>
             </n-statistic>
           </div>
           <div class="stat-item">
@@ -172,13 +190,15 @@
                   <TrendingDownOutline/>
                 </n-icon>
               </template>
+              <template #suffix>
+                %
+              </template>
             </n-statistic>
           </div>
           <div class="stat-item">
             <n-statistic
                 label="可支配金额同比"
                 :value="latestMonthStats.disposableYoyGrowthRate"
-                suffix="%"
                 :value-style="{ color: latestMonthStats.disposableYoyGrowthRate >= 0 ? '#f53f3f' : '#18a058' }"
             >
               <template #prefix>
@@ -188,6 +208,9 @@
                 <n-icon v-else-if="latestMonthStats.disposableYoyGrowthRate < 0">
                   <TrendingDownOutline/>
                 </n-icon>
+              </template>
+              <template #suffix>
+                %
               </template>
             </n-statistic>
           </div>
@@ -1762,8 +1785,10 @@ const filteredItems = computed(() => {
 
   // 按月份筛选
   if (selectedDate.value) {
-    const year = selectedDate.value.getFullYear()
-    const month = selectedDate.value.getMonth()
+    console.log('selectedDate',selectedDate.value)
+    const date = new Date(selectedDate.value)
+    const year = date.getFullYear()
+    const month = date.getMonth()
     result = result.filter(item => {
       const itemDate = new Date(item.record_date)
       return itemDate.getFullYear() === year && itemDate.getMonth() === month
