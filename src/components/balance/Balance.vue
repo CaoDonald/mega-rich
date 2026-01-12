@@ -284,14 +284,14 @@
           <div class="pie-chart-wrapper">
             <!--            <n-skeleton v-if="loading" animated text :rows="5" style="height: 250px; width: 100%;" /> -->
             <v-chart
-            :option="assetPieOption"
-            :style="{ height: '300px', width: '100%' }"
+                :option="assetPieOption"
+                :style="{ height: '300px', width: '100%' }"
             />
           </div>
 
           <!-- 负债占比饼图 -->
           <div class="pie-chart-wrapper">
-<!--            <n-skeleton v-if="loading" animated text :rows="5" style="height: 250px; width: 100%;"/>-->
+            <!--            <n-skeleton v-if="loading" animated text :rows="5" style="height: 250px; width: 100%;"/>-->
             <v-chart
                 :option="liabilityPieOption"
                 :style="{ height: '300px', width: '100%' }"
@@ -629,7 +629,7 @@ const commonChartConfig = {
     }
   },
   legend: {
-    width:'90%',
+    width: '90%',
     top: 30,
     left: 'center',
     type: 'scroll',
@@ -1411,42 +1411,64 @@ const currentMonthItems = computed(() => {
 
 // 资产占比数据 - 嵌套饼图
 const assetPieData = computed(() => {
-  // 按一级分类和二级分类分组计算资产金额（正数）
+  // 1. 准备基础数据结构
+  // 一级分类：名称 -> 总金额
   const primaryCategoryMap = new Map()
-  const secondaryCategoryMap = new Map()
+  // 二级分类：一级分类名称 -> 二级分类名称 -> 金额
+  const secondaryCategoryGroupMap = new Map()
 
-  // 第一遍遍历：计算一级分类和二级分类金额
+  // 2. 遍历数据，统计一级/二级分类金额
   currentMonthItems.value
       .filter(item => item.amount > 0)
       .forEach(item => {
-        const subcategoryId = item.subcategory_id
-        const subcategory = subcategories.value.find(s => s.id === subcategoryId)
+        const subcategory = subcategories.value.find(s => s.id === item.subcategory_id)
         if (!subcategory) return
 
         const category = categories.value.find(c => c.id === subcategory.category_id)
         if (!category) return
 
-        // 计算一级分类金额
+        // 2.1 统计一级分类金额
         const primaryAmount = primaryCategoryMap.get(category.name) || 0
         primaryCategoryMap.set(category.name, primaryAmount + item.amount)
 
-        // 计算二级分类金额，使用一级分类+二级分类作为键
-        const secondaryKey = `${subcategory.name}`
-        const secondaryAmount = secondaryCategoryMap.get(secondaryKey) || 0
-        secondaryCategoryMap.set(secondaryKey, secondaryAmount + item.amount)
+        // 2.2 按一级分类分组统计二级分类金额
+        // 先获取当前一级分类下的二级分类映射（不存在则新建）
+        const secondaryMap = secondaryCategoryGroupMap.get(category.name) || new Map()
+        // 累加当前二级分类的金额
+        const secondaryAmount = secondaryMap.get(subcategory.name) || 0
+        secondaryMap.set(subcategory.name, secondaryAmount + item.amount)
+        // 把更新后的二级分类映射存回一级分组
+        secondaryCategoryGroupMap.set(category.name, secondaryMap)
       })
 
-  // 转换为饼图数据格式
-  return {
-    primary: Array.from(primaryCategoryMap.entries())
-        .map(([name, value]) => ({name, value: parseFloat(value.toFixed(2))}))
-        .sort((a, b) => b.value - a.value),
-    secondary: Array.from(secondaryCategoryMap.entries())
-        .map(([name, value]) => ({name, value: parseFloat(value.toFixed(2))}))
+  // 3. 处理一级分类数据（排序：金额降序）
+  const primaryData = Array.from(primaryCategoryMap.entries())
+      .map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }))
+      .sort((a, b) => b.value - a.value)
+
+  // 4. 处理二级分类数据（核心逻辑）
+  const secondaryData = []
+  // 4.1 按一级分类的排序顺序遍历
+  primaryData.forEach(primaryItem => {
+    const primaryName = primaryItem.name
+    // 4.2 获取当前一级分类下的所有二级分类
+    const secondaryMap = secondaryCategoryGroupMap.get(primaryName)
+    if (!secondaryMap) return
+
+    // 4.3 二级分类自身排序（金额降序）
+    const sortedSecondary = Array.from(secondaryMap.entries())
+        .map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }))
         .sort((a, b) => b.value - a.value)
+
+    // 4.4 把排序后的二级分类添加到最终数组
+    secondaryData.push(...sortedSecondary)
+  })
+
+  return {
+    primary: primaryData,
+    secondary: secondaryData
   }
 })
-
 // 负债占比数据 - 嵌套饼图
 const liabilityPieData = computed(() => {
   // 按一级分类和二级分类分组计算负债金额（负数，取绝对值）
