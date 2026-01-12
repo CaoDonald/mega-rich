@@ -279,34 +279,23 @@
     <!-- 数据占比卡片 -->
     <div class="chart-section">
       <n-card size="small">
-        <h3>资产负债占比</h3>
         <div class="pie-charts-container">
           <!-- 资产占比饼图 -->
           <div class="pie-chart-wrapper">
-            <h4>资产占比</h4>
-            <n-skeleton v-if="loading" animated text :rows="5" style="height: 250px; width: 100%;" />
+            <!--            <n-skeleton v-if="loading" animated text :rows="5" style="height: 250px; width: 100%;" /> -->
             <v-chart
-                v-else-if="assetPieData.length > 0"
-                :option="assetPieOption"
-                :style="{ height: '250px', width: '100%' }"
+            :option="assetPieOption"
+            :style="{ height: '350px', width: '100%' }"
             />
-            <div v-else class="empty-chart-message">
-              <n-empty description="暂无资产数据" />
-            </div>
           </div>
 
           <!-- 负债占比饼图 -->
           <div class="pie-chart-wrapper">
-            <h4>负债占比</h4>
-            <n-skeleton v-if="loading" animated text :rows="5" style="height: 250px; width: 100%;" />
+<!--            <n-skeleton v-if="loading" animated text :rows="5" style="height: 250px; width: 100%;"/>-->
             <v-chart
-                v-else-if="liabilityPieData.length > 0"
                 :option="liabilityPieOption"
-                :style="{ height: '250px', width: '100%' }"
+                :style="{ height: '350px', width: '100%' }"
             />
-            <div v-else class="empty-chart-message">
-              <n-empty description="暂无负债数据" />
-            </div>
           </div>
         </div>
       </n-card>
@@ -601,6 +590,15 @@ updateChartHeight()
 
 // 图表公共配置
 const commonChartConfig = {
+  title: {
+    text: '',
+    left: 'center',
+    top: 5,
+    textStyle: {
+      fontSize: '14px',
+      fontWeight: '500'
+    }
+  },
   tooltip: {
     trigger: 'axis',
     axisPointer: {
@@ -631,18 +629,19 @@ const commonChartConfig = {
     }
   },
   legend: {
+    width:'90%',
     top: 30,
     left: 'center',
     type: 'scroll',
     orient: 'horizontal',
     textStyle: {
-      fontSize: '8px'
+      fontSize: '11px'
     },
-    itemWidth: 8,
-    itemHeight: 8,
-    pageIconSize: 8,
+    itemWidth: 10,
+    itemHeight: 10,
+    pageIconSize: 10,
     pageTextStyle: {
-      fontSize: '9px'
+      fontSize: '10px'
     },
     pageButtonGap: 5,
     zlevel: 10
@@ -684,7 +683,61 @@ const commonChartConfig = {
     },
     zlevel: 10
   }
-}// 按时间范围筛选后的月度数据
+}
+// 饼图通用配置
+const pieChartCommonConfig = {
+  ...commonChartConfig,
+  tooltip: {
+    trigger: 'item',
+    formatter: '{b}: {c}元 ({d}%)',
+    textStyle: {
+      fontSize: '10px'
+    }
+  },
+  legend: {
+    top: 'bottom',
+    ...commonChartConfig.legend
+  },
+  series: [
+    {
+      minAngle: 5, // 最小扇区
+      minShowLabelAngle: 5, // 最小呈现扇区
+      center: ['50%', '60%'],
+      avoidLabelOverlap: true, // 开启标签重叠避让
+      type: 'pie',
+      radius: ['20%', '40%'],
+      itemStyle: {
+        borderRadius: 4,
+        borderColor: '#fff',
+        borderWidth: 1
+      },
+      label: {
+        show: true,
+        formatter: '{b}\n{d}%',
+        fontSize: '10px'
+      },
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: '10px',
+          fontWeight: 'bold'
+        }
+      },
+      labelLine: {
+        show: true, // 移动端隐藏连接线，进一步节省空间
+        lineStyle: {
+          width: 0.5
+        },
+        length: 8,
+        length2: 3,
+        smooth: 0.2
+      }
+    }
+  ]
+}
+
+
+// 按时间范围筛选后的月度数据
 const timeFilteredMonthlyStats = computed(() => {
   // 先根据时间范围筛选原始条目
   const filtered = filterByTimeRange(items.value, selectedTimeRange.value)
@@ -840,24 +893,14 @@ const lineChartOption = computed(() => {
 
   return {
     title: {
+      ...commonChartConfig.title,
       text: '二级分类资金变化趋势',
-      left: 'center',
-      top: 5,
-      textStyle: {
-        fontSize: '13px',
-        fontWeight: '500'
-      }
     },
     tooltip: commonChartConfig.tooltip,
     grid: commonChartConfig.grid,
     legend: {
       ...commonChartConfig.legend,
       data: legendData,
-      itemWidth: 10,  // 统一图例项宽度
-      itemHeight: 10, // 统一图例项高度
-      textStyle: {
-        fontSize: '11px'  // 统一图例文字大小
-      }
     },
     xAxis: [
       {
@@ -969,23 +1012,13 @@ const lineChartCategoryOption = computed(() => {
 
   return {
     title: {
+      ...commonChartConfig.title,
       text: '一级分类资金变化趋势',
-      left: 'center',
-      top: 5,
-      textStyle: {
-        fontSize: '13px',
-        fontWeight: '500'
-      }
     },
     tooltip: commonChartConfig.tooltip,
     legend: {
       ...commonChartConfig.legend,
       data: legendData,
-      itemWidth: 10,
-      itemHeight: 10,
-      textStyle: {
-        fontSize: '11px'
-      }
     },
     grid: commonChartConfig.grid,
     xAxis: [
@@ -1112,23 +1145,13 @@ const areaChartOption = computed(() => {
 
   return {
     title: {
-      text: '总金额变化',
-      left: 'center',
-      top: 5,
-      textStyle: {
-        fontSize: '13px',
-        fontWeight: '500'
-      }
+      ...commonChartConfig.title,
+      text: '总金额变化'
     },
     tooltip: commonChartConfig.tooltip,
     legend: {
       ...commonChartConfig.legend,
       data: ['广义金额', '可支配金额'],
-      itemWidth: 10,
-      itemHeight: 10,
-      textStyle: {
-        fontSize: '11px'
-      }
     },
     grid: commonChartConfig.grid,
     xAxis: {
@@ -1276,23 +1299,13 @@ const annualBarChartOption = computed(() => {
 
   return {
     title: {
+      ...commonChartConfig.title,
       text: '月度资金汇总',
-      left: 'center',
-      top: 5,
-      textStyle: {
-        fontSize: '13px',
-        fontWeight: '500'
-      }
     },
     tooltip: commonChartConfig.tooltip,
     legend: {
       ...commonChartConfig.legend,
       data: ['资产', '负债'],
-      itemWidth: 10,
-      itemHeight: 10,
-      textStyle: {
-        fontSize: '11px'
-      }
     },
     grid: commonChartConfig.grid,
     xAxis: {
@@ -1359,7 +1372,7 @@ const currentMonthItems = computed(() => {
   const selected = selectedDate.value ? new Date(selectedDate.value) : new Date()
   const year = selected.getFullYear()
   const month = selected.getMonth()
-  
+
   // 根据月份过滤数据
   return filteredItems.value.filter(item => {
     const itemDate = new Date(item.record_date)
@@ -1371,117 +1384,60 @@ const currentMonthItems = computed(() => {
 const assetPieData = computed(() => {
   // 按二级分类分组计算资产金额（正数）
   const categoryMap = new Map()
-  
+
   currentMonthItems.value
-    .filter(item => item.amount > 0)
-    .forEach(item => {
-      const subcategoryId = item.subcategory_id
-      const subcategory = subcategories.value.find(s => s.id === subcategoryId)
-      if (!subcategory) return
-      
-      const category = categories.value.find(c => c.id === subcategory.category_id)
-      if (!category) return
-      
-      const categoryName = `${category.name} - ${subcategory.name}`
-      const currentAmount = categoryMap.get(categoryName) || 0
-      categoryMap.set(categoryName, currentAmount + item.amount)
-    })
-  
+      .filter(item => item.amount > 0)
+      .forEach(item => {
+        const subcategoryId = item.subcategory_id
+        const subcategory = subcategories.value.find(s => s.id === subcategoryId)
+        if (!subcategory) return
+
+        const category = categories.value.find(c => c.id === subcategory.category_id)
+        if (!category) return
+
+        // const categoryName = `${category.name} - ${subcategory.name}`
+        const categoryName = `${subcategory.name}`
+        const currentAmount = categoryMap.get(categoryName) || 0
+        categoryMap.set(categoryName, currentAmount + item.amount)
+      })
+
   // 转换为饼图数据格式
   return Array.from(categoryMap.entries())
-    .map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }))
-    .sort((a, b) => b.value - a.value)
+      .map(([name, value]) => ({name, value: parseFloat(value.toFixed(2))}))
+      .sort((a, b) => b.value - a.value)
 })
 
 // 负债占比数据
 const liabilityPieData = computed(() => {
   // 按二级分类分组计算负债金额（负数，取绝对值）
   const categoryMap = new Map()
-  
+
   currentMonthItems.value
-    .filter(item => item.amount < 0)
-    .forEach(item => {
-      const subcategoryId = item.subcategory_id
-      const subcategory = subcategories.value.find(s => s.id === subcategoryId)
-      if (!subcategory) return
-      
-      const category = categories.value.find(c => c.id === subcategory.category_id)
-      if (!category) return
-      
-      const categoryName = `${category.name} - ${subcategory.name}`
-      const currentAmount = categoryMap.get(categoryName) || 0
-      categoryMap.set(categoryName, currentAmount + Math.abs(item.amount))
-    })
-  
+      .filter(item => item.amount < 0)
+      .forEach(item => {
+        const subcategoryId = item.subcategory_id
+        const subcategory = subcategories.value.find(s => s.id === subcategoryId)
+        if (!subcategory) return
+
+        const category = categories.value.find(c => c.id === subcategory.category_id)
+        if (!category) return
+
+        const categoryName = `${subcategory.name}`
+        const currentAmount = categoryMap.get(categoryName) || 0
+        categoryMap.set(categoryName, currentAmount + Math.abs(item.amount))
+      })
+
   // 转换为饼图数据格式
   return Array.from(categoryMap.entries())
-    .map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }))
-    .sort((a, b) => b.value - a.value)
+      .map(([name, value]) => ({name, value: parseFloat(value.toFixed(2))}))
+      .sort((a, b) => b.value - a.value)
 })
-
-// 饼图通用配置
-const pieChartCommonConfig = {
-  tooltip: {
-    trigger: 'item',
-    formatter: '{b}: {c}元 ({d}%)',
-    textStyle: {
-      fontSize: '11px'
-    }
-  },
-  legend: {
-    orient: 'vertical',
-    right: 10,
-    top: 'center',
-    type: 'scroll',
-    textStyle: {
-      fontSize: '9px'
-    },
-    itemWidth: 8,
-    itemHeight: 8
-  },
-  series: [
-    {
-      type: 'pie',
-      radius: ['40%', '70%'],
-      avoidLabelOverlap: false,
-      itemStyle: {
-        borderRadius: 4,
-        borderColor: '#fff',
-        borderWidth: 2
-      },
-      label: {
-        show: true,
-        formatter: '{b}\n{d}%',
-        fontSize: '10px'
-      },
-      emphasis: {
-        label: {
-          show: true,
-          fontSize: '12px',
-          fontWeight: 'bold'
-        }
-      },
-      labelLine: {
-        show: true,
-        lineStyle: {
-          width: 1
-        }
-      }
-    }
-  ]
-}
-
 // 资产占比饼图配置
 const assetPieOption = computed(() => {
   return {
     title: {
-      text: '',
-      left: 'center',
-      top: 10,
-      textStyle: {
-        fontSize: '12px',
-        fontWeight: '500'
-      }
+      ...pieChartCommonConfig.title,
+      text: '资产'
     },
     tooltip: pieChartCommonConfig.tooltip,
     legend: pieChartCommonConfig.legend,
@@ -1499,13 +1455,8 @@ const assetPieOption = computed(() => {
 const liabilityPieOption = computed(() => {
   return {
     title: {
-      text: '',
-      left: 'center',
-      top: 10,
-      textStyle: {
-        fontSize: '12px',
-        fontWeight: '500'
-      }
+      ...pieChartCommonConfig.title,
+      text: '负债'
     },
     tooltip: pieChartCommonConfig.tooltip,
     legend: pieChartCommonConfig.legend,
@@ -1988,7 +1939,7 @@ const filteredItems = computed(() => {
 
   // 按月份筛选
   if (selectedDate.value) {
-    console.log('selectedDate',selectedDate.value)
+    console.log('selectedDate', selectedDate.value)
     const date = new Date(selectedDate.value)
     const year = date.getFullYear()
     const month = date.getMonth()

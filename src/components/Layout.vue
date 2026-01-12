@@ -17,7 +17,7 @@
           >
               <n-avatar
                 :size="40"
-                :src="avatarSrc || '/mega-rich-logo.svg'"
+                :src="avatarSrc"
                 fallback-src=""
                 class="avatar"
               />
