@@ -160,7 +160,6 @@ const handleCallback = async () => {
 
 onMounted(async () => {
   const {data,error} = await supabase.auth.getSession()
-  console.log('data',data)
   if (data.session) {
     session.value = data.session
     loadUser(data.session.user)
@@ -193,12 +192,10 @@ async function loadUser(authUser) {
     .select('*')
     .eq('id', authUser.id)
     .single()
-  console.log('userRes',userRes)
   const { data: profile } = userRes
   user.value = profile
     ? { ...authUser, ...profile }
     : authUser
-  console.log('user',user)
 }
 
 const handleLoginClick = () => {

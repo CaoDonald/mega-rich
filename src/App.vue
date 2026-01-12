@@ -19,7 +19,6 @@ import { NConfigProvider } from 'naive-ui'
    */
   const themeOverrides = {
     Button: {
-      round: true
     }
   }
 

@@ -69,6 +69,7 @@
     <div class="items-list">
       <n-card size="small">
         <n-data-table
+            size="small"
             :columns="columns"
             :data="itemsWithGrowthStats"
             :pagination="{ pageSize: 20 }"
@@ -219,10 +220,10 @@
     </div>
 
     <!-- 广义金额和可支配金额表格 -->
-    <div class="amounts-table-section">
+    <div class="items-list">
       <n-card size="small">
-        <h3>广义金额与可支配金额统计</h3>
         <n-data-table
+            size="small"
             :columns="statsColumns"
             :data="dateGroupedStats"
             :pagination="{ pageSize: 10 }"
@@ -233,7 +234,7 @@
     </div>
 
     <!-- 折线图 -->
-    <div class="chart-section">
+    <div class="items-list">
       <n-card size="small">
         <v-chart
             :option="lineChartOption"
@@ -244,7 +245,7 @@
     </div>
 
     <!-- 一级分类资金变化趋势 -->
-    <div class="chart-section">
+    <div class="items-list">
       <n-card size="small">
         <v-chart
             :option="lineChartCategoryOption"
@@ -255,7 +256,7 @@
     </div>
 
     <!-- 面积图 -->
-    <div class="chart-section">
+    <div class="items-list">
       <n-card size="small">
         <v-chart
             :option="areaChartOption"
@@ -266,7 +267,7 @@
     </div>
 
     <!-- 年度汇总柱状图 -->
-    <div class="chart-section">
+    <div class="items-list">
       <n-card size="small">
         <v-chart
             :option="annualBarChartOption"
@@ -277,7 +278,7 @@
     </div>
 
     <!-- 数据占比卡片 -->
-    <div class="chart-section">
+    <div class="items-list">
       <n-card size="small">
         <div class="pie-charts-container">
           <!-- 资产占比饼图 -->
@@ -524,6 +525,8 @@ import {
 import AddEditItemForm from './sub/AddEditItemForm.vue'
 import ItemDetail from './sub/ItemDetail.vue'
 import CategoryManagerModal from './sub/CategoryManagerModal.vue'
+import { commonChartConfig, pieChartCommonConfig } from '../../utils/ChartConfig.js';
+import { labelWidth, valueWidth,percentWidth} from '../../utils/TableConfig.js';
 
 // 获取消息实例
 const message = useMessage()
@@ -587,184 +590,6 @@ window.addEventListener('resize', updateChartHeight)
 
 // 初始化图表高度
 updateChartHeight()
-
-// 图表公共配置
-const commonChartConfig = {
-  title: {
-    text: '',
-    left: 'center',
-    top: 5,
-    textStyle: {
-      fontSize: '14px',
-      fontWeight: '500'
-    }
-  },
-  tooltip: {
-    trigger: 'axis',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985',
-        fontSize: '11px',
-        padding: [5, 8],
-        // 给坐标轴指示器标签也提升层级
-        zlevel: 200,
-        // 确保标签不被裁剪
-        overflow: 'none'
-      },
-      // 提升坐标轴指示器本身的层级
-      zlevel: 200
-    },
-    triggerOn: 'click',
-    padding: 10,
-    // 进一步提高 zlevel 数值（避开其他元素的层级冲突）
-    zlevel: 200,
-    // 开启边界约束
-    confine: true,
-    // 取消挂载到body
-    appendToBody: false,
-    textStyle: {
-      fontSize: '11px',
-      zlevel: 200
-    }
-  },
-  legend: {
-    width: '90%',
-    top: 30,
-    left: 'center',
-    type: 'scroll',
-    orient: 'horizontal',
-    textStyle: {
-      fontSize: '11px'
-    },
-    itemWidth: 10,
-    itemHeight: 10,
-    pageIconSize: 10,
-    pageTextStyle: {
-      fontSize: '10px'
-    },
-    pageButtonGap: 5,
-    zlevel: 10
-  },
-  grid: {
-    left: '8%',
-    right: '8%',
-    bottom: '10%',
-    top: '30%',
-    containLabel: true,
-    zlevel: 10
-  },
-  dataZoom: {
-    type: 'inside',
-    start: 0,
-    end: 100,
-    zlevel: 10
-  },
-  xAxis: {
-    axisLabel: {
-      fontSize: '10px',
-      margin: 8
-    },
-    axisTick: {
-      show: false,
-      zlevel: 10
-    },
-    zlevel: 10
-  },
-  yAxis: {
-    axisLabel: {
-      fontSize: '8px',
-      margin: 4,
-      show: false
-    },
-    axisTick: {
-      show: false,
-      zlevel: 10
-    },
-    zlevel: 10
-  }
-}
-// 饼图通用配置
-const pieChartCommonConfig = {
-  ...commonChartConfig,
-  tooltip: {
-    trigger: 'item',
-    formatter: '{b}: {c}元 ({d}%)',
-    textStyle: {
-      fontSize: '10px'
-    }
-  },
-  legend: {
-    top: 'bottom',
-    ...commonChartConfig.legend
-  },
-  series: [
-    {
-      minAngle: 5, // 最小扇区
-      minShowLabelAngle: 5, // 最小呈现扇区
-      center: ['50%', '60%'],
-      avoidLabelOverlap: true, // 开启标签重叠避让
-      type: 'pie',
-      radius: ['0%', '35%'],
-      itemStyle: {
-        borderRadius: 4,
-        borderColor: '#fff',
-        borderWidth: 1
-      },
-      label: {
-        show: true,
-        formatter: '{b}\n{d}%',
-        fontSize: '10px',
-        position: 'inside'
-      },
-      emphasis: {
-        label: {
-          show: true,
-          fontSize: '10px',
-          fontWeight: 'bold'
-        }
-      },
-      labelLine: {
-        show: false, // 移动端隐藏连接线，进一步节省空间
-        lineStyle: {
-          width: 0.5
-        },
-        length: 8,
-        length2: 3,
-        smooth: 0.2
-      }
-    },
-    {
-      label: {
-        show: true,
-        formatter: '{b}\n{d}%',
-        fontSize: '10px'
-      },
-      emphasis: {
-        label: {
-          show: true,
-          fontSize: '10px',
-          fontWeight: 'bold'
-        }
-      },
-      labelLine: {
-        show: true, // 移动端隐藏连接线，进一步节省空间
-        lineStyle: {
-          width: 0.5
-        },
-        length: 8,
-        length2: 3,
-        smooth: 0.2
-      },
-      minAngle: 5, // 最小扇区
-      minShowLabelAngle: 5, // 最小呈现扇区
-      radius: ['40%', '60%'], // 外层二级分类环形
-      center: ['50%', '60%'],
-      type: 'pie',
-    }
-  ]
-}
-
 
 // 按时间范围筛选后的月度数据
 const timeFilteredMonthlyStats = computed(() => {
@@ -1858,7 +1683,7 @@ const statsColumns = [
   {
     title: '日期',
     key: 'date',
-    width: 120,
+    width:  labelWidth,
     render(row) {
       return new Date(row.date).toLocaleDateString()
     }
@@ -1866,7 +1691,7 @@ const statsColumns = [
   {
     title: '广义金额',
     key: 'broadAmount',
-    width: 150,
+    width: valueWidth,
     render(row) {
       const isPositive = row.broadAmount >= 0
       return h('div', {
@@ -1879,7 +1704,7 @@ const statsColumns = [
   {
     title: '增长',
     key: 'broadGrowth',
-    width: 150,
+    width: percentWidth,
     render(row) {
       const isPositive = row.broadGrowth >= 0
       return h('div', {
@@ -1892,7 +1717,7 @@ const statsColumns = [
   {
     title: '环比',
     key: 'broadGrowthRate',
-    width: 100,
+    width: percentWidth,
     render(row) {
       const isPositive = row.broadGrowthRate >= 0
       return h('div', {
@@ -1905,7 +1730,7 @@ const statsColumns = [
   {
     title: '同比',
     key: 'broadYoyGrowthRate',
-    width: 100,
+    width: percentWidth,
     render(row) {
       const isPositive = row.broadYoyGrowthRate >= 0
       return h('div', {
@@ -1918,7 +1743,7 @@ const statsColumns = [
   {
     title: '可支配金额',
     key: 'disposableAmount',
-    width: 150,
+    width: valueWidth,
     render(row) {
       const isPositive = row.disposableAmount >= 0
       return h('div', {
@@ -1931,7 +1756,7 @@ const statsColumns = [
   {
     title: '增长',
     key: 'disposableGrowth',
-    width: 150,
+    width: valueWidth,
     render(row) {
       const isPositive = row.disposableGrowth >= 0
       return h('div', {
@@ -1944,7 +1769,7 @@ const statsColumns = [
   {
     title: '环比',
     key: 'disposableGrowthRate',
-    width: 100,
+    width: percentWidth,
     render(row) {
       const isPositive = row.disposableGrowthRate >= 0
       return h('div', {
@@ -1957,7 +1782,7 @@ const statsColumns = [
   {
     title: '同比',
     key: 'disposableYoyGrowthRate',
-    width: 100,
+    width: percentWidth,
     render(row) {
       const isPositive = row.disposableYoyGrowthRate >= 0
       return h('div', {
@@ -2119,7 +1944,7 @@ const columns = [
   {
     title: '一级分类',
     key: 'category',
-    width: 120,
+    width:  labelWidth,
     render(row) {
       const subcategory = subcategories.value.find(s => s.id === row.subcategory_id)
       if (!subcategory) return ''
@@ -2130,7 +1955,7 @@ const columns = [
   {
     title: '二级分类',
     key: 'subcategory',
-    width: 120,
+    width:  labelWidth,
     render(row) {
       const subcategory = subcategories.value.find(s => s.id === row.subcategory_id)
       return subcategory?.name || ''
@@ -2139,7 +1964,7 @@ const columns = [
   {
     title: '金额',
     key: 'amount',
-    width: 150,
+    width: valueWidth,
     render(row) {
       const isPositive = row.amount >= 0
       return h('div', {
@@ -2160,7 +1985,7 @@ const columns = [
   {
     title: '记录日期',
     key: 'record_date',
-    width: 120,
+    width:  labelWidth,
     render(row) {
       return new Date(row.record_date).toLocaleDateString()
     }
@@ -2168,7 +1993,7 @@ const columns = [
   {
     title: '增长',
     key: 'growth',
-    width: 150,
+    width: valueWidth,
     render(row) {
       const value = parseFloat(row.growth || 0)
       const isNegative = value < 0
@@ -2185,7 +2010,7 @@ const columns = [
   {
     title: '环比',
     key: 'growthRate',
-    width: 120,
+    width:  percentWidth,
     render(row) {
       const value = parseFloat(row.growthRate || 0)
       const isNegative = value < 0
@@ -2202,7 +2027,7 @@ const columns = [
   {
     title: '同比',
     key: 'yoyGrowthRate',
-    width: 120,
+    width:  percentWidth,
     render(row) {
       const value = parseFloat(row.yoyGrowthRate || 0)
       const isNegative = value < 0
@@ -2219,7 +2044,7 @@ const columns = [
   {
     title: '',
     key: 'actions',
-    width: 120,
+    width:  labelWidth,
     render(row) {
       return h('div', {class: 'actions-cell'}, [
         // 查看图标按钮
@@ -2966,65 +2791,6 @@ onMounted(() => {
   text-align: center;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
-  justify-content: flex-end;
-}
-
-.action-buttons :deep(.n-button) {
-  transition: all 0.3s ease;
-  border-radius: var(--custom-border-radius);
-  font-weight: 500;
-}
-
-.action-buttons :deep(.n-button:hover) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.action-buttons :deep(.n-button:active) {
-  transform: translateY(0);
-}
-
-.action-buttons :deep(.n-button--primary) {
-  background-color: var(--custom-color-brand);
-  border-color: var(--custom-color-brand);
-}
-
-.action-buttons :deep(.n-button--primary:hover) {
-  background-color: var(--custom-color-brand-hover);
-  border-color: var(--custom-color-brand-hover);
-}
-
-.filter-section :deep(.n-button) {
-  transition: all 0.3s ease;
-  border-radius: var(--custom-border-radius);
-  font-weight: 500;
-}
-
-.filter-section :deep(.n-button:hover) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.filter-section :deep(.n-button:active) {
-  transform: translateY(0);
-}
-
-.filter-section {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-  align-items: center;
-  padding: 20px;
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: var(--custom-border-radius);
-  border: var(--custom-border);
-}
-
 .filter-select {
   min-width: 180px;
   flex: 1;
@@ -3076,117 +2842,6 @@ onMounted(() => {
   .pie-charts-container {
     grid-template-columns: 1fr;
   }
-}
-
-.items-list {
-  margin-bottom: 30px;
-}
-
-.items-list :deep(.n-card) {
-  border-radius: var(--custom-border-radius);
-  box-shadow: var(--custom-box-shadow);
-  border: var(--custom-border);
-  overflow: hidden;
-}
-
-.items-list :deep(.n-data-table) {
-  font-size: 0.95rem;
-}
-
-.items-list :deep(.n-data-table-thead) {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.items-list :deep(.n-data-table-thead-th) {
-  font-weight: 600;
-  color: var(--custom-color);
-  padding: 12px 16px;
-  border-bottom: 2px solid var(--custom-color-secondary);
-}
-
-.items-list :deep(.n-data-table-tbody-td) {
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.items-list :deep(.n-data-table-tbody-tr:hover) {
-  background-color: rgba(255, 255, 255, 0.05);
-  transition: background-color 0.2s ease;
-}
-
-.items-list :deep(.n-data-table-td) {
-  color: var(--custom-color);
-}
-
-.items-list :deep(.n-pagination) {
-  margin-top: 15px;
-  display: flex;
-  justify-content: center;
-}
-
-.statistics-section {
-  margin-bottom: 30px;
-}
-
-.statistics-section :deep(.n-card) {
-  border-radius: var(--custom-border-radius);
-  box-shadow: var(--custom-box-shadow);
-  border: var(--custom-border);
-  padding: 25px;
-}
-
-.statistics-section h3 {
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin: 0 0 25px 0;
-  color: var(--custom-color);
-  text-align: center;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 25px;
-}
-
-.stat-item {
-  text-align: center;
-  padding: 25px;
-  background-color: rgba(255, 255, 255, 0.08);
-  border-radius: var(--custom-border-radius);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.stat-item:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.stat-item :deep(.n-statistic-label) {
-  color: var(--custom-color-secondary);
-  font-size: 0.9rem;
-  margin-bottom: 8px;
-}
-
-.stat-item :deep(.n-statistic-value) {
-  color: var(--custom-color-brand);
-  font-size: 1.8rem;
-  font-weight: 700;
-}
-
-.stat-item :deep(.n-statistic-suffix) {
-  color: var(--custom-color);
-  font-size: 1.2rem;
-  font-weight: 500;
-}
-
-.actions-cell {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
 }
 
 /* 操作列容器 */
@@ -3401,6 +3056,12 @@ onMounted(() => {
   margin-left: auto;
   display: flex;
   gap: 10px;
+}
+
+.amounts-table-section {
+  margin-bottom: 30px;
+  width: 100%; /* 强制容器宽度100% */
+  box-sizing: border-box; /* 确保padding不影响宽度计算 */
 }
 
 /* 平板设备响应式设计 */

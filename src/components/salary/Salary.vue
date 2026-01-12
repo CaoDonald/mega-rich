@@ -46,14 +46,14 @@
           placeholder="选择月份"
           class="filter-select"
       />
-      <!--      <n-button @click="applyFilters">-->
-      <!--        <template #icon>-->
-      <!--          <n-icon>-->
-      <!--            <SearchOutline/>-->
-      <!--          </n-icon>-->
-      <!--        </template>-->
-      <!--        筛选-->
-      <!--      </n-button>-->
+
+      <n-select
+          clearable
+          v-model:value="timeRange"
+          placeholder="选择记录类型"
+          :options="rangeOptions"
+          class="filter-select"
+      />
     </div>
 
     <!-- 数据列表 -->
@@ -71,34 +71,36 @@
 
     <!-- 统计信息 -->
     <div class="statistics-section">
-      <n-card>
-        <div class="stats-header">
+      <n-card size="small">
           <h3>统计信息</h3>
-          <div class="time-range-selector">
-            <span>时间范围：</span>
-            <n-radio-group v-model:value="timeRange" button-style="solid">
-              <n-radio-button value="all">全部</n-radio-button>
-              <n-radio-button value="thisYear">今年</n-radio-button>
-              <n-radio-button value="lastYear">上一年</n-radio-button>
-              <n-radio-button value="1y">近一年</n-radio-button>
-              <n-radio-button value="last3Years">上三年</n-radio-button>
-              <n-radio-button value="3y">近三年</n-radio-button>
-            </n-radio-group>
-          </div>
-        </div>
-
         <div class="stats-grid">
           <div class="stat-item">
-            <n-statistic label="总金额" :value="totalAmount" suffix="元"/>
+            <n-statistic label="总金额" :value="totalAmount">
+              <template #suffix>
+                元
+              </template>
+            </n-statistic>
           </div>
           <div class="stat-item">
-            <n-statistic label="月薪平均" :value="averageSalary" suffix="元"/>
+            <n-statistic label="月薪平均" :value="averageSalary">
+              <template #suffix>
+                元
+              </template>
+            </n-statistic>
           </div>
           <div class="stat-item">
-            <n-statistic label="年终奖平均" :value="averageBonus" suffix="元"/>
+            <n-statistic label="年终奖平均" :value="averageBonus" suffix="元">
+              <template #suffix>
+                元
+              </template>
+            </n-statistic>
           </div>
           <div class="stat-item">
-            <n-statistic label="平均年薪" :value="averageAnnualSalary" suffix="元"/>
+            <n-statistic label="平均年薪" :value="averageAnnualSalary"  suffix="元">
+              <template #suffix>
+                元
+              </template>
+            </n-statistic>
           </div>
         </div>
 
@@ -270,21 +272,7 @@ use([
   CanvasRenderer
 ])
 import {supabase} from '../../supabase.js'
-import {
-  NButton,
-  NCard,
-  NDataTable,
-  NSelect,
-  NDatePicker,
-  NModal,
-  NForm,
-  NFormItem,
-  NInput,
-  NAlert,
-  NStatistic,
-  NIcon,
-  useMessage
-} from 'naive-ui'
+import {useMessage, NIcon, NButton} from 'naive-ui'
 import * as XLSX from 'xlsx'
 import {
   AddOutline,
@@ -302,6 +290,9 @@ import {
 
 import AddEditRecordForm from './sub/AddEditRecordForm.vue'
 import RecordDetail from './sub/RecordDetail.vue'
+import { labelWidth,valueWidth,percentWidth } from '../../utils/TableConfig.js'
+import { commonChartConfig, pieChartCommonConfig} from '../../utils/ChartConfig.js'
+import VChart from "vue-echarts";
 
 // 基础状态
 const message = useMessage()
@@ -364,6 +355,16 @@ const typeOptions = [
   {label: '所有类型', value: null},
   {label: '月薪', value: 'salary'},
   {label: '年终奖', value: 'bonus'}
+]
+
+// 计算属性
+const rangeOptions = [
+  {label: '全部', value: 'all'},
+      {label: '今年', value: 'thisYear'},
+      {label: '上一年', value: 'lastYear'},
+      {label: '近一年', value: '1y'},
+      {label: '上三年', value: 'last3Years'},
+      {label: '近三年', value: '3y'},
 ]
 
 const filteredRecords = computed(() => {
@@ -525,94 +526,7 @@ const averageAnnualSalary = computed(() => {
 
   // 平均年薪 = 月薪平均 * 12 + 年终奖平均
   return (avgSalary * 12 + avgBonus).toFixed(2)
-})
-
-const commonChartConfig = {
-  tooltip: {
-    trigger: 'axis',
-    showContent: true,
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985',
-        fontSize: '11px',
-        padding: [5, 8],
-        // 给坐标轴指示器标签也提升层级
-        zlevel: 200,
-        // 确保标签不被裁剪
-        overflow: 'none'
-      },
-      // 提升坐标轴指示器本身的层级
-      zlevel: 200
-    },
-    triggerOn: 'click',
-    padding: 10,
-    // 进一步提高 zlevel 数值（避开其他元素的层级冲突）
-    zlevel: 200,
-    // 开启边界约束
-    confine: true,
-    // 取消挂载到body
-    appendToBody: false,
-    textStyle: {
-      fontSize: '11px',
-      zlevel: 200
-    }
-  },
-  legend: {
-    top: 30,
-    left: 'center',
-    type: 'scroll',
-    orient: 'horizontal',
-    textStyle: {
-      fontSize: '8px'
-    },
-    itemWidth: 8,
-    itemHeight: 8,
-    pageIconSize: 8,
-    pageTextStyle: {
-      fontSize: '9px'
-    },
-    pageButtonGap: 5,
-    zlevel: 10
-  },
-  grid: {
-    left: '8%',
-    right: '8%',
-    bottom: '10%',
-    top: '30%',
-    containLabel: true,
-    zlevel: 10
-  },
-  dataZoom: {
-    type: 'inside',
-    start: 0,
-    end: 100,
-    zlevel: 10
-  },
-  xAxis: {
-    axisLabel: {
-      fontSize: '10px',
-      margin: 8
-    },
-    axisTick: {
-      show: false,
-      zlevel: 10
-    },
-    zlevel: 10
-  },
-  yAxis: {
-    axisLabel: {
-      fontSize: '8px',
-      margin: 4,
-      show: false
-    },
-    axisTick: {
-      show: false,
-      zlevel: 10
-    },
-    zlevel: 10
-  }
-}// 按时间范围筛选后的月度数据
+})// 按时间范围筛选后的月度数据
 
 // 图表数据处理
 const chartData = computed(() => {
@@ -1375,7 +1289,7 @@ const columns = [
   {
     title: '记录类型',
     key: 'type',
-    width: 80,
+    width: labelWidth,
     render(row) {
       // 使用图标表示类型
       const icon = row.type === 'salary' ?
@@ -1390,7 +1304,7 @@ const columns = [
   {
     title: '金额',
     key: 'amount',
-    width: 150,
+    width: valueWidth,
     render(row) {
       return `${row.amount.toFixed(2)}元`
     }
@@ -1398,7 +1312,7 @@ const columns = [
   {
     title: '工资月份',
     key: 'record_date',
-    width: 150,
+    width: labelWidth,
     render(row) {
       return new Date(row.record_date).toLocaleDateString()
     }
@@ -1406,7 +1320,7 @@ const columns = [
   {
     title: '增长',
     key: 'growth',
-    width: 150,
+    width: valueWidth,
     render(row) {
       const value = parseFloat(row.growth || 0)
       const isNegative = value < 0
@@ -1423,7 +1337,7 @@ const columns = [
   {
     title: '环比',
     key: 'mom',
-    width: 120,
+    width: percentWidth,
     render(row) {
       const value = parseFloat(row.mom || 0)
       const isNegative = value < 0
@@ -1440,7 +1354,7 @@ const columns = [
   {
     title: '同比',
     key: 'yoy',
-    width: 120,
+    width: percentWidth,
     render(row) {
       const value = parseFloat(row.yoy || 0)
       const isNegative = value < 0
@@ -1457,7 +1371,7 @@ const columns = [
   {
     title: '',
     key: 'actions',
-    width: 120, // 纯图标列宽可更小
+    width: valueWidth, // 纯图标列宽可更小
     render(row) {
       return h('div', {class: 'actions-cell'}, [
         // 查看图标按钮（原生 div + NIcon）
@@ -1808,26 +1722,6 @@ const downloadTemplate = () => {
   text-align: center;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-}
-
-.filter-section {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  align-items: center;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-}
-
 .filter-select {
   min-width: 150px;
   flex: 1;
@@ -1884,10 +1778,6 @@ const downloadTemplate = () => {
   opacity: 1 !important;
 }
 
-.statistics-section {
-  margin-bottom: 30px;
-}
-
 .stats-header {
   display: flex;
   justify-content: space-between;
@@ -1916,13 +1806,6 @@ const downloadTemplate = () => {
 .time-range-selector span {
   font-size: 0.85rem;
   color: #666;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
 }
 
 .chart-container {
@@ -2051,15 +1934,6 @@ const downloadTemplate = () => {
     padding-top: 12px;
     gap: 8px;
   }
-}
-
-.stat-item {
-  text-align: center;
-  padding: 20px 15px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-  transition: all 0.3s ease;
 }
 
 /* 移动端适配 */
