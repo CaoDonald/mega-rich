@@ -616,14 +616,23 @@ const chartData = computed(() => {
     }
   })
 
-  // 过滤出月薪记录
+  // 过滤出所有记录（包括月薪和年终奖），并按日期排序
+  const allRecords = calculatedChartRecords
+      .sort((a, b) => new Date(a.record_date) - new Date(b.record_date))
+
+  // 按月份分组（包括月薪和年终奖）
+  const monthGroups = {}
+
+  // 首先处理所有记录，用于计算累计收入
+  const allChartRecordsSorted = chartRecords
+    .sort((a, b) => new Date(a.record_date) - new Date(b.record_date))
+
+  // 按月份分组，用于计算月度数据（只保留月薪，年终奖单独处理）
   const salaryRecords = calculatedChartRecords
       .filter(r => r.type === 'salary')
       .sort((a, b) => new Date(a.record_date) - new Date(b.record_date))
 
-  // 按月份分组
-  const monthGroups = {}
-
+  // 处理月薪记录，按月份分组
   salaryRecords.forEach(record => {
     const date = new Date(record.record_date)
     const year = date.getFullYear()
@@ -662,49 +671,78 @@ const chartData = computed(() => {
   const yoyData = sortedData.map(item => item.yoy)
   const momData = sortedData.map(item => item.mom)
 
-  // 计算累计总收入
+  // 计算累计总收入（包括月薪和年终奖）
   let cumulativeTotal = 0
   const cumulativeTotalData = sortedData.map(item => {
-    cumulativeTotal += item.amount
+    const monthYear = item.month
+    // 累加该月份及之前的所有记录（包括月薪和年终奖）
+    const recordsUpToMonth = allChartRecordsSorted.filter(record => {
+      const recordDate = new Date(record.record_date)
+      const recordMonthKey = `${recordDate.getFullYear()}-${String(recordDate.getMonth() + 1).padStart(2, '0')}`
+      return recordMonthKey <= monthYear
+    })
+    
+    cumulativeTotal = recordsUpToMonth.reduce((sum, record) => sum + record.amount, 0)
     return cumulativeTotal
   })
 
-  // 计算每年累计收入 - 改进版本：显示每年独立累计，更有比较价值
+  // 计算每年累计收入（包括月薪和年终奖）
   let cumulativeByYear = {} // 按年份存储累计值
   const cumulativeThisYearData = sortedData.map(item => {
     const itemYear = parseInt(item.month.split('-')[0])
-
-    // 初始化该年份的累计值
-    if (!cumulativeByYear[itemYear]) {
-      cumulativeByYear[itemYear] = 0
-    }
-
-    // 累计该月份金额（每个年份独立累计）
-    cumulativeByYear[itemYear] += item.amount
-
-    // 返回该年份的累计值，这样可以看到每年的累计趋势
-    return cumulativeByYear[itemYear]
+    
+    // 筛选出该年份截至当前月份的所有记录（包括月薪和年终奖）
+    const month = parseInt(item.month.split('-')[1])
+    const recordsUpToCurrentMonth = allChartRecordsSorted.filter(record => {
+      const recordDate = new Date(record.record_date)
+      const recordYear = recordDate.getFullYear()
+      const recordMonth = recordDate.getMonth() + 1
+      
+      return recordYear === itemYear && recordMonth <= month
+    })
+    
+    // 计算该年份截至当前月份的累计收入
+    const cumulativeForYear = recordsUpToCurrentMonth.reduce((sum, record) => sum + record.amount, 0)
+    
+    return cumulativeForYear
   })
 
   // 计算年度收入数据和实际月份数
   const annualData = {} // 按年份存储总收入
   const annualMonthCount = {} // 按年份存储实际月份数
 
+  // 获取所有包含年终奖的记录
+  const allChartRecords = chartRecords
+    .sort((a, b) => new Date(a.record_date) - new Date(b.record_date))
+
+  // 遍历所有记录，包括月薪和年终奖
+  allChartRecords.forEach(record => {
+    const recordDate = new Date(record.record_date)
+    const year = recordDate.getFullYear()
+    
+    if (!annualData[year]) {
+      annualData[year] = 0
+      annualMonthCount[year] = new Set()
+    }
+    
+    // 累加年度收入，包括月薪和年终奖
+    annualData[year] += record.amount
+    
+    // 统计每个年份的实际月份数（只统计月薪的月份）
+    if (record.type === 'salary') {
+      const month = recordDate.getMonth() + 1
+      const monthKey = `${year}-${month}`
+      annualMonthCount[year].add(monthKey)
+    }
+  })
+  
+  // 确保所有年份都有年度收入数据
   sortedData.forEach(item => {
     const year = parseInt(item.month.split('-')[0])
     if (!annualData[year]) {
       annualData[year] = 0
-      annualMonthCount[year] = 0
-    }
-    annualData[year] += item.amount
-
-    // 统计每个年份的实际月份数（使用月份作为唯一标识）
-    const month = parseInt(item.month.split('-')[1])
-    const monthKey = `${year}-${month}`
-    if (!annualMonthCount[year]) {
       annualMonthCount[year] = new Set()
     }
-    annualMonthCount[year].add(monthKey)
   })
 
   // 计算年维度月均工资：年度总收入 / 实际月份数
