@@ -72,7 +72,7 @@
             size="small"
             :columns="columns"
             :data="itemsWithGrowthStats"
-            :pagination="{ pageSize: 20 }"
+            :pagination="{...pagination,pageSize:20}"
             :loading="loading"
             :row-key="row => row.id"
         />
@@ -226,7 +226,7 @@
             size="small"
             :columns="statsColumns"
             :data="dateGroupedStats"
-            :pagination="{ pageSize: 10 }"
+            :pagination="pagination"
             :row-key="row => row.date"
             :loading="loading"
         />
@@ -526,7 +526,7 @@ import AddEditItemForm from './sub/AddEditItemForm.vue'
 import ItemDetail from './sub/ItemDetail.vue'
 import CategoryManagerModal from './sub/CategoryManagerModal.vue'
 import { commonChartConfig, pieChartCommonConfig } from '../../utils/ChartConfig.js';
-import { labelWidth, valueWidth,percentWidth} from '../../utils/TableConfig.js';
+import {labelWidth, valueWidth, percentWidth,pagination} from '../../utils/TableConfig.js'
 
 // 获取消息实例
 const message = useMessage()

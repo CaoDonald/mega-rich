@@ -64,7 +64,7 @@
             :data="filteredRecords"
             :loading="loading"
             :row-key="row => row.id"
-            :pagination="{ size: 'small',pageSize: 10 }"
+            :pagination="pagination"
         />
       </n-card>
     </div>
@@ -303,7 +303,7 @@ import {
 
 import AddEditRecordForm from './sub/AddEditRecordForm.vue'
 import RecordDetail from './sub/RecordDetail.vue'
-import {labelWidth, valueWidth, percentWidth} from '../../utils/TableConfig.js'
+import {labelWidth, valueWidth, percentWidth,pagination} from '../../utils/TableConfig.js'
 import {commonChartConfig, pieChartCommonConfig} from '../../utils/ChartConfig.js'
 import VChart from "vue-echarts";
 

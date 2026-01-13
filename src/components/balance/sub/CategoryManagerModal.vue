@@ -16,7 +16,7 @@
           <n-data-table
             :columns="primaryCategoryColumns"
             :data="primaryCategories"
-            :pagination="{ pageSize: 10 }"
+            :pagination="pagination"
             :row-key="row => row.id"
           />
         </div>
@@ -44,7 +44,7 @@
           <n-data-table
             :columns="secondaryCategoryColumns"
             :data="filteredSecondaryCategories"
-            :pagination="{ pageSize: 10 }"
+            :pagination="pagination"
             :row-key="row => row.id"
           />
         </div>
@@ -140,6 +140,7 @@ import { ref, computed, h } from 'vue'
 import { useMessage } from 'naive-ui'
 import { NButton, NIcon } from 'naive-ui'
 import { AddOutline, CreateOutline, TrashOutline } from '@vicons/ionicons5'
+import {labelWidth, valueWidth, percentWidth,pagination} from '../../../utils/TableConfig.js'
 
 // 获取消息实例
 const message = useMessage()
