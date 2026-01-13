@@ -123,6 +123,9 @@ const parseUrlParams = () => {
   for (const [key, value] of urlParams.entries()) {
     params[key] = value
   }
+  alert(params)
+  console.log('query',params)
+
   return params
 }
 
@@ -131,7 +134,7 @@ const handleCallback = async () => {
   const params = parseUrlParams()
   
   // 检查是否有密码重置相关参数
-  if (params.type === 'recovery' && params.token && params.refresh_token) {
+  if (params.type === 'recovery') {
     // 密码重置场景
     const { data, error } = await supabase.auth.getSession()
     if (data.session) {
@@ -139,7 +142,7 @@ const handleCallback = async () => {
       loadUser(data.session.user)
       navigateTo('password-reset')
     }
-  } else if (params.type === 'email_change' && params.access_token) {
+  } else if (params.type === 'email_change') {
     // 邮箱更改确认场景
     const { data, error } = await supabase.auth.getSession()
     if (data.session) {
@@ -147,7 +150,7 @@ const handleCallback = async () => {
       loadUser(data.session.user)
       // 可以添加邮箱更改成功的提示
     }
-  } else if (params.type === 'signup' && params.access_token) {
+  } else if (params.type === 'signup') {
     // 注册成功场景
     const { data, error } = await supabase.auth.getSession()
     if (data.session) {

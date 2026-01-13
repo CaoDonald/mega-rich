@@ -78,7 +78,7 @@ const handleSendResetLink = async () => {
     loading.value = true
 
     const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-      redirectTo: window.location.origin
+      redirectTo: window.location.origin+'?type=recovery'
     })
 
     if (error) {

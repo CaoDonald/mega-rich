@@ -59,25 +59,6 @@ provide('updateUser', updateUser)
 
 // 应用加载时检查URL路径和用户登录状态
 onMounted(async () => {
-  const path = window.location.pathname
-  
-  // 映射URL路径到页面名称
-  const pathToPage = {
-    '/login': 'login',
-    '/register': 'register',
-    '/forgot-password': 'forgot-password',
-    '/password-reset': 'password-reset',
-    '/balance': 'balance',
-    '/salary': 'salary',
-    '/user-settings': 'user-settings',
-    '/home': 'home'
-  }
-  
-  // 如果路径存在映射关系，则切换到对应的页面
-  if (pathToPage[path]) {
-    currentPage.value = pathToPage[path]
-  }
-  
   // 检查用户登录状态
   await updateUser()
 })
