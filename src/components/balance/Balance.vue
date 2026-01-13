@@ -1686,7 +1686,7 @@ const statsColumns = [
   {
     title: '增长',
     key: 'broadGrowth',
-    width: percentWidth,
+    width: valueWidth,
     render(row) {
       const isPositive = row.broadGrowth >= 0
       return h('div', {
