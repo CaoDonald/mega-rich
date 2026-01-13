@@ -163,6 +163,9 @@ onMounted(async () => {
   if (data.session) {
     session.value = data.session
     loadUser(data.session.user)
+  } else {
+    // 未登录时，检查是否需要跳转
+    checkLoginRequired()
   }
   
   // 检查URL是否包含回调参数
@@ -182,9 +185,28 @@ onMounted(async () => {
     } else if (event === 'SIGNED_OUT') {
       // 用户登出
       avatarSrc.value = ''
+      session.value = null
+      user.value = null
+      checkLoginRequired()
     }
   })
 })
+
+// 监听页面变化，检查是否需要登录
+watch(currentPage, (newPage) => {
+  checkLoginRequired(newPage)
+})
+
+// 检查页面是否需要登录
+const checkLoginRequired = (page = currentPage.value) => {
+  // 不需要登录的页面列表
+  const noLoginRequired = ['login', 'register', 'forgot-password', 'password-reset', 'home']
+  
+  // 如果页面需要登录且用户未登录，则跳转到登录页面
+  if (!noLoginRequired.includes(page) && !session.value) {
+    navigateTo('login')
+  }
+}
 
 async function loadUser(authUser) {
   const userRes = await supabase
