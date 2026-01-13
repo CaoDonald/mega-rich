@@ -25,6 +25,7 @@
     "@supabase/supabase-js": "^2.87.1",
     "@vitejs/plugin-vue": "^6.0.1",
     "naive-ui": "^2.43.2",
+    "supabase": "^2.72.4",
     "vite": "^7.2.4"
   }
 }

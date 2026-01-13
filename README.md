@@ -64,7 +64,8 @@
 
 ### 1. 安装依赖
 ```bash
-npm install         # 安装项目依赖
+pnpm install         # 安装项目依赖
+pnpm add supabase --save-dev --allow-build=supabase
 ```
 
 ### 2. 配置Supabase
@@ -76,17 +77,17 @@ VITE_SUPABASE_ANON_KEY=your-supabase-anon-key-here
 
 ### 3. 启动开发服务器
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 ### 4. 构建生产版本
 ```bash
-npm run build
+pnpm run build
 ```
 
 ### 5. 预览生产版本
 ```bash
-npm run preview
+pnpm run preview
 ```
 
 ## 页面结构
