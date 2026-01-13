@@ -64,7 +64,7 @@
             :data="filteredRecords"
             :loading="loading"
             :row-key="row => row.id"
-            :pagination="{ pageSize: 10 }"
+            :pagination="{ size: 'small',pageSize: 10 }"
         />
       </n-card>
     </div>
