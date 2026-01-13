@@ -131,7 +131,7 @@ const handleCallback = async () => {
   const params = parseUrlParams()
   
   // 检查是否有密码重置相关参数
-  if (params.type === 'recovery' && params.access_token && params.refresh_token) {
+  if (params.type === 'recovery' && params.token && params.refresh_token) {
     // 密码重置场景
     const { data, error } = await supabase.auth.getSession()
     if (data.session) {
@@ -185,8 +185,6 @@ onMounted(async () => {
     } else if (event === 'SIGNED_OUT') {
       // 用户登出
       avatarSrc.value = ''
-      session.value = null
-      user.value = null
       checkLoginRequired()
     }
   })
