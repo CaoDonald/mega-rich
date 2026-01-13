@@ -1,5 +1,5 @@
-const labelWidth = 90
-const valueWidth = 120
+const labelWidth = 100
+const valueWidth = 130
 const percentWidth = 100
 
 export {
