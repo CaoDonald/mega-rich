@@ -123,8 +123,6 @@ const parseUrlParams = () => {
   for (const [key, value] of urlParams.entries()) {
     params[key] = value
   }
-  alert(params)
-  console.log('query',params)
 
   return params
 }
@@ -175,7 +173,6 @@ onMounted(async () => {
   handleCallback()
 
   supabase.auth.onAuthStateChange(async (event, session) => {
-    console.log('onAuthStateChange', event, session)
     if (event === 'PASSWORD_RECOVERY') {
       // 密码重置成功
       session.value = session
