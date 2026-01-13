@@ -742,72 +742,47 @@ const chartData = computed(() => {
 const chartOption = computed(() => {
   const {months, amounts, growthData, yoyData, momData, cumulativeTotalData, cumulativeThisYearData} = chartData.value
 
-  // 设置y轴配置
-  const yAxis1 = {
-    type: 'value',
-    name: '金额（元）',
-    position: 'left',
-    axisLabel: {
-      formatter: '{value}',
-      fontSize: '8px',
-      margin: 4
-    },
-    axisTick: {
-      show: false
-    }
-  }
-
-  const yAxis2 = {
-    type: 'value',
-    name: '增长率（%）',
-    position: 'right',
-    axisLabel: {
-      formatter: '{value}%',
-      fontSize: '8px',
-      margin: 4
-    },
-    // 0%位置加粗
-    splitLine: {
-      show: true,
-      lineStyle: {
-        color: '#999',
-        type: 'solid',
-        width: 1
-      }
-    },
-    axisLine: {
-      onZero: true,
-      lineStyle: {
-        color: '#333',
-        width: 2
-      }
-    },
-    axisTick: {
-      show: true,
-      alignWithLabel: true
-    }
-  }
-
   return {
+    ...commonChartConfig,
     tooltip: commonChartConfig.tooltip,
     legend: {
       ...commonChartConfig.legend,
-      data: ['月薪', '增长', '同比', '环比'],
-      textStyle: {
-        fontSize: '10px'
-      }
+      data: ['月薪', '增长', '同比', '环比']
     },
-    grid: commonChartConfig.grid,
+    grid: {
+      ...commonChartConfig.grid,
+      left: '1%',
+      right: '1%'
+    },
     xAxis: {
       ...commonChartConfig.xAxis,
-      type: 'category',
       boundaryGap: false,
       data: months,
-      axisLine: {
-        onZero: true
-      }
+      axisLabel: {
+        ...commonChartConfig.xAxis.axisLabel,
+        interval: 2,
+        rotate: 45,
+        fontSize: '8px'
+      },
     },
-    yAxis: [yAxis1, yAxis2],
+    yAxis: [
+      {
+        ...commonChartConfig.yAxis, name: '金额（元）',
+        position: 'left',
+        axisLabel: {
+          ...commonChartConfig.yAxis.axisLabel,
+          formatter: '{value}',
+          show: true
+        }
+      }, {
+        ...commonChartConfig.yAxis, name: '比率（%）',
+        position: 'right',
+        axisLabel: {
+          ...commonChartConfig.yAxis.axisLabel,
+          formatter: '{value}',
+          show: true
+        }
+      }],
     series: [
       {
         name: '月薪',
@@ -815,17 +790,17 @@ const chartOption = computed(() => {
         data: amounts,
         smooth: true,
         symbol: 'none', // 移除折线上的点
-        itemStyle: {
-          color: '#2080f0'
-        }
+        // itemStyle: {
+        //   color: '#2080f0'
+        // }
       },
       {
         name: '增长',
         type: 'bar',
         data: growthData,
-        itemStyle: {
-          color: '#ff9800'
-        }
+        // itemStyle: {
+        //   color: '#ff9800'
+        // }
       },
       {
         name: '同比',
@@ -834,9 +809,9 @@ const chartOption = computed(() => {
         data: yoyData,
         smooth: true,
         symbol: 'none', // 移除折线上的点
-        itemStyle: {
-          color: '#f53f3f'
-        }
+        // itemStyle: {
+        //   color: '#f53f3f'
+        // }
       },
       {
         name: '环比',
@@ -845,9 +820,9 @@ const chartOption = computed(() => {
         data: momData,
         smooth: true,
         symbol: 'none', // 移除折线上的点
-        itemStyle: {
-          color: '#18a058'
-        }
+        // itemStyle: {
+        //   color: '#18a058'
+        // }
       }
     ]
   }
@@ -964,11 +939,7 @@ const annualBarChartOption = computed(() => {
 
   return {
     ...commonChartConfig,
-    grid: {
-      ...commonChartConfig.grid,
-      left: '1%',
-      right: '1%'
-    },
+    grid: commonChartConfig.grid,
     xAxis: {
       ...commonChartConfig.xAxis,
       type: 'category',
@@ -1159,14 +1130,20 @@ const columns = [
     key: 'type',
     width: labelWidth,
     render(row) {
-      // 使用图标表示类型
+// 使用图标表示类型
       const icon = row.type === 'salary' ?
           h(NIcon, {size: 20, color: '#2080f0'}, {default: () => h(CashOutline)}) :
           h(NIcon, {size: 20, color: '#f53f3f'}, {default: () => h(GiftOutline)})
+      const text = h('span', {
+        style: {marginLeft: '8px', fontSize: '12px'} // 调整文字样式和间距
+      }, row.type === 'salary' ? '月薪' : '年终奖');
       return h('div', {
-        class: 'type-icon-container',
-        title: row.type === 'salary' ? '月薪' : '年终奖'
-      }, [icon])
+        title: row.type === 'salary' ? '月薪' : '年终奖',
+        style: {
+          display: 'flex',        // 启用 flex 布局
+          alignItems: 'center',   // 垂直居中对齐子元素
+        }
+      }, [icon, text])
     }
   },
   {
