@@ -87,7 +87,6 @@ onMounted(async () => {
       loadUser()
     } else if (event === 'SIGNED_OUT') {
       // 用户登出
-      avatarSrc.value = ''
       checkLoginRequired()
     }
   })
