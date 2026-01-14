@@ -62,7 +62,7 @@ const navigateTo = inject('navigateTo')
 const currentPage = inject('currentPage')
 const user = inject('user')
 const session = inject('session')
-const updateUser = inject('updateUser')
+const loadUser = inject('loadUser')
 
 const showSettingsModal = ref(false)
 const avatarSrc = ref('')
@@ -204,18 +204,6 @@ const checkLoginRequired = (page = currentPage.value) => {
   if (!noLoginRequired.includes(page) && !session.value) {
     navigateTo('login')
   }
-}
-
-async function loadUser(authUser) {
-  const userRes = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', authUser.id)
-    .single()
-  const { data: profile } = userRes
-  user.value = profile
-    ? { ...authUser, ...profile }
-    : authUser
 }
 
 const handleLoginClick = () => {

@@ -132,7 +132,7 @@ import { useMessage, NSpin } from 'naive-ui'
 
 const navigateTo = inject('navigateTo')
 const currentPage = inject('currentPage')
-const updateUser = inject('updateUser')
+const loadUser = inject('loadUser')
 const message = useMessage()
 const formRef = ref(null)
 const passwordFormRef = ref(null)
@@ -443,7 +443,7 @@ const handleAvatarUpload = async (event) => {
     // 更新本地数据
     formData.avatar_url = publicUrl
     // 更新全局用户信息，确保右上角头像同步刷新
-    await updateUser()
+    await loadUser()
     message.success('头像上传成功')
   } catch (error) {
     console.error('头像上传失败:', error)

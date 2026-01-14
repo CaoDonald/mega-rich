@@ -35,7 +35,7 @@ const navigateTo = (page) => {
 }
 
 // 更新用户信息的方法
-const updateUser = async () => {
+const loadUser = async () => {
   const { data: { session: currentSession } } = await supabase.auth.getSession()
   if (currentSession) {
     session.value = currentSession
@@ -55,12 +55,12 @@ provide('navigateTo', navigateTo)
 provide('currentPage', currentPage)
 provide('user', user)
 provide('session', session)
-provide('updateUser', updateUser)
+provide('loadUser', loadUser)
 
 // 应用加载时检查URL路径和用户登录状态
 onMounted(async () => {
   // 检查用户登录状态
-  await updateUser()
+  await loadUser()
 })
 </script>
 
