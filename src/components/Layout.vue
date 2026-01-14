@@ -44,13 +44,6 @@
         <p>© 2025 Mega Rich. All rights reserved.</p>
       </div>
     </n-layout-footer>
-
-    <!-- 用户设置（待实现） -->
-    <!-- <UserSettingsModal
-      v-model:show="showSettingsModal"
-      :user="user"
-      @user-updated="handleUserUpdated"
-    /> -->
   </n-layout>
 </template>
 
@@ -63,8 +56,6 @@ const currentPage = inject('currentPage')
 const user = inject('user')
 const session = inject('session')
 const loadUser = inject('loadUser')
-
-const showSettingsModal = ref(false)
 const avatarSrc = ref('')
 
 /** 下拉菜单选项（Naive UI 正确用法） */
@@ -79,7 +70,6 @@ const dropdownOptions = [
   }
 ]
 
-// 加载头像方法
 const loadAvatar = async () => {
   if (user.value?.avatar_url) {
     try {
@@ -91,13 +81,12 @@ const loadAvatar = async () => {
         avatarSrc.value = URL.createObjectURL(data)
       }
     } catch (error) {
-      console.error('加载头像失败:', error)
-      avatarSrc.value = ''
+      console.error('加载头像失败:', error);
     }
   } else {
-    avatarSrc.value = ''
+    avatarSrc.value = '';
   }
-}
+};
 
 // 监听用户信息变化，重新加载头像
 watch(user, (newUser) => {
@@ -116,95 +105,10 @@ const handleDropdownSelect = (key) => {
   }
 }
 
-// 解析URL参数
-const parseUrlParams = () => {
-  const urlParams = new URLSearchParams(window.location.search)
-  const params = {}
-  for (const [key, value] of urlParams.entries()) {
-    params[key] = value
-  }
 
-  return params
-}
-
-// 处理回调
-const handleCallback = async () => {
-  const params = parseUrlParams()
-  
-  // 检查是否有密码重置相关参数
-  if (params.type === 'recovery') {
-    // 密码重置场景
-    const { data, error } = await supabase.auth.getSession()
-    if (data.session) {
-      session.value = data.session
-      loadUser(data.session.user)
-      navigateTo('password-reset')
-    }
-  } else if (params.type === 'email_change') {
-    // 邮箱更改确认场景
-    const { data, error } = await supabase.auth.getSession()
-    if (data.session) {
-      session.value = data.session
-      loadUser(data.session.user)
-      // 可以添加邮箱更改成功的提示
-    }
-  } else if (params.type === 'signup') {
-    // 注册成功场景
-    const { data, error } = await supabase.auth.getSession()
-    if (data.session) {
-      session.value = data.session
-      loadUser(data.session.user)
-      navigateTo('home')
-    }
-  }
-}
-
-onMounted(async () => {
-  const {data,error} = await supabase.auth.getSession()
-  if (data.session) {
-    session.value = data.session
-    loadUser(data.session.user)
-  } else {
-    // 未登录时，检查是否需要跳转
-    checkLoginRequired()
-  }
-  
-  // 检查URL是否包含回调参数
-  handleCallback()
-
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      // 密码重置成功
-      session.value = session
-      loadUser(session.user)
-      navigateTo('password-reset')
-    } else if (event === 'SIGNED_IN') {
-      // 用户登录成功
-      session.value = session
-      loadUser(session.user)
-    } else if (event === 'SIGNED_OUT') {
-      // 用户登出
-      avatarSrc.value = ''
-      checkLoginRequired()
-    }
-  })
+onMounted(() => {
+  loadAvatar()
 })
-
-// 监听页面变化，检查是否需要登录
-watch(currentPage, (newPage) => {
-  checkLoginRequired(newPage)
-})
-
-// 检查页面是否需要登录
-const checkLoginRequired = (page = currentPage.value) => {
-  // 不需要登录的页面列表
-  const noLoginRequired = ['login', 'register', 'forgot-password', 'password-reset', 'home']
-  
-  // 如果页面需要登录且用户未登录，则跳转到登录页面
-  if (!noLoginRequired.includes(page) && !session.value) {
-    navigateTo('login')
-  }
-}
 
 const handleLoginClick = () => {
   navigateTo('login')
@@ -218,9 +122,7 @@ const handleLogout = async () => {
   navigateTo('home')
 }
 
-const handleUserUpdated = (updatedUser) => {
-  user.value = updatedUser
-}
+
 </script>
 
 <style scoped>

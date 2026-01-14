@@ -1,5 +1,5 @@
 <script setup>
-import { ref, provide, onMounted } from 'vue'
+import { ref, provide, onMounted,watch } from 'vue'
 import Layout from './components/Layout.vue'
 import Home from './components/Home.vue'
 import Login from './components/auth/Login.vue'
@@ -50,6 +50,21 @@ const loadUser = async () => {
   }
 }
 
+watch(currentPage, (newPage) => {
+  checkLoginRequired(newPage)
+})
+
+// 检查页面是否需要登录
+const checkLoginRequired = (page = currentPage.value) => {
+  // 不需要登录的页面列表
+  const noLoginRequired = ['login', 'register', 'forgot-password', 'password-reset', 'home']
+
+  // 如果页面需要登录且用户未登录，则跳转到登录页面
+  if (!noLoginRequired.includes(page) && !session.value) {
+    navigateTo('login')
+  }
+}
+
 // 提供全局状态和方法给所有子组件
 provide('navigateTo', navigateTo)
 provide('currentPage', currentPage)
@@ -61,6 +76,21 @@ provide('loadUser', loadUser)
 onMounted(async () => {
   // 检查用户登录状态
   await loadUser()
+
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      // 密码重置成功
+      loadUser()
+      navigateTo('password-reset')
+    } else if (event === 'SIGNED_IN') {
+      // 用户登录成功
+      loadUser()
+    } else if (event === 'SIGNED_OUT') {
+      // 用户登出
+      avatarSrc.value = ''
+      checkLoginRequired()
+    }
+  })
 })
 </script>
 
