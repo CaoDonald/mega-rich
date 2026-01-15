@@ -99,7 +99,6 @@ import { useMessage } from 'naive-ui'
 
 // 使用 App.vue 提供的页面切换方法
 const navigateTo = inject('navigateTo')
-const updateUser = inject('updateUser')
 const message = useMessage()
 const formRef = ref(null)
 const loading = ref(false)
@@ -136,9 +135,6 @@ const handleLogin = async () => {
     if (error) {
       throw error
     }
-
-    // 更新全局用户状态
-    await updateUser()
 
     message.success('登录成功')
     navigateTo('home')
