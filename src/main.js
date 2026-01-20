@@ -4,6 +4,7 @@ import App from './App.vue'
 import './styles/component.css'    // 引入抽离的按钮样式
 // 导入需要全局注册的组件
 import {
+    NTag,
     NEmpty,
     NSkeleton,
     NCollapse,
@@ -50,6 +51,7 @@ import {
 // 1. 创建 Naive UI 插件，并配置全局注册的组件
 const naive = create({
     components: [
+        NTag,
         NEmpty,
         NSkeleton,
         NCollapseItem,

@@ -9,6 +9,7 @@ import PasswordReset from './components/auth/PasswordReset.vue'
 import Balance from './components/balance/Balance.vue'
 import Salary from './components/salary/Salary.vue'
 import UserSettings from './components/auth/UserSettings.vue'
+import Invest from './components/invest/Invest.vue'
 import { NMessageProvider } from 'naive-ui'
 import { supabase } from './supabase'
 import { NConfigProvider } from 'naive-ui'
@@ -105,6 +106,7 @@ onMounted(async () => {
         <PasswordReset v-else-if="currentPage === 'password-reset'" />
         <Balance v-else-if="currentPage === 'balance'" />
         <Salary v-else-if="currentPage === 'salary'" />
+        <Invest v-else-if="currentPage === 'invest'" />
         <UserSettings v-else-if="currentPage === 'user-settings'" />
       </Layout>
     </n-message-provider>

@@ -6,6 +6,37 @@
           <h1>Mega Rich</h1>
         </div>
 
+        <div class="nav-menu" v-if="session">
+          <div
+            class="nav-item"
+            :class="{ active: currentPage === 'home' }"
+            @click="navigateTo('home')"
+          >
+            首页
+          </div>
+          <div
+            class="nav-item"
+            :class="{ active: currentPage === 'balance' }"
+            @click="navigateTo('balance')"
+          >
+            收支
+          </div>
+          <div
+            class="nav-item"
+            :class="{ active: currentPage === 'salary' }"
+            @click="navigateTo('salary')"
+          >
+            工资
+          </div>
+          <div
+            class="nav-item"
+            :class="{ active: currentPage === 'invest' }"
+            @click="navigateTo('invest')"
+          >
+            财富追踪
+          </div>
+        </div>
+
         <div class="user-info">
           <!-- 已登录 -->
           <n-dropdown
@@ -147,7 +178,29 @@ const handleLogout = async () => {
 
 .nav-menu {
   display: flex;
-  gap: 10px;
+  gap: 4px;
+  flex: 1;
+  justify-content: center;
+}
+
+.nav-item {
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #4b5563;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  background: #f3f4f6;
+  color: #3b82f6;
+}
+
+.nav-item.active {
+  background: #eff6ff;
+  color: #3b82f6;
+  font-weight: 500;
 }
 
 .user-info {

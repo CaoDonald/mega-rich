@@ -11,7 +11,7 @@
     <div class="features-section">
       <h3>核心功能</h3>
       <div class="features-grid">
-        <div class="feature-card">
+        <div class="feature-card" @click="navigateTo('invest')" style="cursor: pointer;">
           <n-icon :size="48">
             <CashOutline />
           </n-icon>
