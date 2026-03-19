@@ -1204,15 +1204,40 @@ const annualBarChartOption = computed(() => {
 
 // 当前选中月份的数据
 const currentMonthItems = computed(() => {
-  // 获取当前选中的月份
-  const selected = selectedDate.value ? new Date(selectedDate.value) : new Date()
-  const year = selected.getFullYear()
-  const month = selected.getMonth()
+  if (selectedDate.value) {
+    // 有选中月份，直接过滤
+    const selected = new Date(selectedDate.value)
+    const year = selected.getFullYear()
+    const month = selected.getMonth()
+    return filteredItems.value.filter(item => {
+      const itemDate = new Date(item.record_date)
+      return itemDate.getFullYear() === year && itemDate.getMonth() === month
+    })
+  }
 
-  // 根据月份过滤数据
+  // 没有选中月份，先尝试当前月份
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth()
+  const currentMonthData = filteredItems.value.filter(item => {
+    const itemDate = new Date(item.record_date)
+    return itemDate.getFullYear() === currentYear && itemDate.getMonth() === currentMonth
+  })
+  if (currentMonthData.length > 0) {
+    return currentMonthData
+  }
+
+  // 当前月份无数据，取最新月份的数据
+  if (filteredItems.value.length === 0) return []
+  const latestDate = filteredItems.value.reduce((latest, item) => {
+    const d = new Date(item.record_date)
+    return d > latest ? d : latest
+  }, new Date(0))
+  const latestYear = latestDate.getFullYear()
+  const latestMonth = latestDate.getMonth()
   return filteredItems.value.filter(item => {
     const itemDate = new Date(item.record_date)
-    return itemDate.getFullYear() === year && itemDate.getMonth() === month
+    return itemDate.getFullYear() === latestYear && itemDate.getMonth() === latestMonth
   })
 })
 
@@ -2247,15 +2272,31 @@ const extractAndCreateCategories = async (records) => {
 
   // 1. 提取所有分类组合
   for (const record of records) {
-    const primaryCategoryName = (record['一级分类'] || '').toString().trim()
+    let primaryCategoryName = (record['一级分类'] || '').toString().trim()
     const secondaryCategoryName = (record['二级分类'] || '').toString().trim()
 
-    if (primaryCategoryName && secondaryCategoryName) {
-      primaryCategoriesSet.add(primaryCategoryName)
-      // 使用一级分类+二级分类作为唯一键，确保不同一级分类下的同名二级分类可以共存
-      const comboKey = `${primaryCategoryName}|${secondaryCategoryName}`
-      secondaryCategoriesMap.set(comboKey, {primaryCategoryName, secondaryCategoryName})
+    if (!secondaryCategoryName) continue // 二级为空，跳过（后续验证会报错）
+
+    // 一级分类为空时，从现有二级分类中推断一级分类
+    if (!primaryCategoryName) {
+      const matchingSubs = subcategories.value.filter(s => s && s.name === secondaryCategoryName)
+      if (matchingSubs.length === 1) {
+        const existingPrimary = categories.value.find(c => c && c.id === matchingSubs[0].category_id)
+        if (existingPrimary) {
+          primaryCategoryName = existingPrimary.name
+        }
+      } else if (matchingSubs.length > 1) {
+        throw new Error(`二级分类"${secondaryCategoryName}"存在于多个一级分类下，请在文件中明确填写一级分类`)
+      }
+      if (!primaryCategoryName) {
+        throw new Error(`二级分类"${secondaryCategoryName}"找不到对应的一级分类，请先在分类管理中新建一级分类，再重新导入`)
+      }
     }
+
+    primaryCategoriesSet.add(primaryCategoryName)
+    // 使用一级分类+二级分类作为唯一键，确保不同一级分类下的同名二级分类可以共存
+    const comboKey = `${primaryCategoryName}|${secondaryCategoryName}`
+    secondaryCategoriesMap.set(comboKey, {primaryCategoryName, secondaryCategoryName})
   }
 
   // 2. 创建不存在的一级分类
@@ -2362,14 +2403,23 @@ const validateRecordsWithCategories = async (records, primaryCategoriesMap, seco
 
     // 3. 处理分类（只支持中文列名）
     // 提取一级分类和二级分类名称
-    const primaryCategoryName = (record['一级分类'] || '').toString().trim()
+    let primaryCategoryName = (record['一级分类'] || '').toString().trim()
     const secondaryCategoryName = (record['二级分类'] || '').toString().trim()
 
-    if (!primaryCategoryName) {
-      errors.push(`一级分类不能为空（第${rowNum}行）`)
-    }
     if (!secondaryCategoryName) {
       errors.push(`二级分类不能为空（第${rowNum}行）`)
+    } else if (!primaryCategoryName) {
+      // 一级分类为空，从现有二级分类中推断
+      const matchingSubs = subcategories.value.filter(s => s && s.name === secondaryCategoryName)
+      if (matchingSubs.length === 1) {
+        const existingPrimary = categories.value.find(c => c && c.id === matchingSubs[0].category_id)
+        if (existingPrimary) primaryCategoryName = existingPrimary.name
+      } else if (matchingSubs.length > 1) {
+        errors.push(`二级分类"${secondaryCategoryName}"存在于多个一级分类下，请明确填写一级分类（第${rowNum}行）`)
+      }
+      if (!primaryCategoryName) {
+        errors.push(`二级分类"${secondaryCategoryName}"找不到对应一级分类，请先在分类管理中新建一级分类（第${rowNum}行）`)
+      }
     }
 
     if (primaryCategoryName && secondaryCategoryName) {
@@ -2380,8 +2430,6 @@ const validateRecordsWithCategories = async (records, primaryCategoriesMap, seco
       if (!subcategoryId) {
         errors.push(`分类映射失败，请检查分类数据（第${rowNum}行）`)
       }
-    } else {
-      errors.push(`一级分类和二级分类不能为空（第${rowNum}行）`)
     }
 
     // 4. 处理和验证日期
