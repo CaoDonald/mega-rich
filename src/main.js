@@ -1,7 +1,10 @@
 import { createApp } from 'vue'
-import { create } from 'naive-ui' // 新增 NMessageProvider（useMessage 依赖）
+import { createPinia } from 'pinia'
+import { create } from 'naive-ui'
 import App from './App.vue'
-import './styles/component.css'    // 引入抽离的按钮样式
+import router from './router'
+import './styles/component.css'
+
 // 导入需要全局注册的组件
 import {
     NTag,
@@ -25,30 +28,22 @@ import {
     NButton,
     NDropdown,
     NForm,
-    NFormItem, NConfigProvider,
-    NInput, NIcon,
-    NSelect, NDatePicker, NDataTable, NCard, NStatistic, NModal, NInputNumber, NMessageProvider
+    NFormItem,
+    NConfigProvider,
+    NInput,
+    NIcon,
+    NSelect,
+    NDatePicker,
+    NDataTable,
+    NCard,
+    NStatistic,
+    NModal,
+    NInputNumber,
+    NMessageProvider,
+    NSpace
 } from 'naive-ui'
 
-import {
-    AddOutline,
-    RefreshOutline,
-    SearchOutline,
-    EyeOutline,
-    CreateOutline,
-    TrashOutline,
-    ListOutline,
-    TrendingUpOutline,
-    TrendingDownOutline,
-    SettingsOutline,
-    CashOutline,
-    CaretUpOutline,
-    CaretDownOutline,
-    CloudUploadOutline,
-    CloudDownloadOutline
-} from '@vicons/ionicons5'
-
-// 1. 创建 Naive UI 插件，并配置全局注册的组件
+// 创建 Naive UI 插件
 const naive = create({
     components: [
         NTag,
@@ -73,14 +68,31 @@ const naive = create({
         NButton,
         NDropdown,
         NForm,
-        NFormItem, NConfigProvider,
-        NInput, NIcon,
-        NSelect, NDatePicker, NDataTable, NCard, NStatistic, NModal, NInputNumber
+        NFormItem,
+        NConfigProvider,
+        NInput,
+        NIcon,
+        NSelect,
+        NDatePicker,
+        NDataTable,
+        NCard,
+        NStatistic,
+        NModal,
+        NInputNumber,
+        NSpace
     ]
 })
 
+// 创建应用实例
 const app = createApp(App)
 
+// 创建 Pinia 实例
+const pinia = createPinia()
+
+// 注册插件
+app.use(pinia)
+app.use(router)
 app.use(naive)
 
+// 挂载应用
 app.mount('#app')

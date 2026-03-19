@@ -286,6 +286,7 @@ use([
 ])
 import {supabase} from '../../supabase.js'
 import {useMessage, NIcon, NButton} from 'naive-ui'
+import {useAuthStore} from '../../stores/auth.js'
 import * as XLSX from 'xlsx'
 import {
   AddOutline,
@@ -309,6 +310,7 @@ import VChart from "vue-echarts";
 
 // 基础状态
 const message = useMessage()
+const authStore = useAuthStore()
 const loading = ref(false)
 const records = ref([])
 const selectedType = ref(null)
@@ -1296,22 +1298,23 @@ const columns = [
 
 // 数据加载
 const loadData = async () => {
+  if (!authStore.user) {
+    console.warn('用户未登录，无法加载数据')
+    return
+  }
+
   loading.value = true
   try {
     const {data: recordsData, error} = await supabase
         .from('salary_records')
         .select('*')
+        .eq('user_id', authStore.user.id)
         .order('record_date', {ascending: false})
     if (error) throw error
     records.value = recordsData || []
   } catch (error) {
     console.error('加载失败:', error)
     message.error('数据加载失败: ' + error.message)
-    // 兜底测试数据
-    records.value = [
-      {id: 1, amount: 15000, type: 'salary', record_date: '2025-12-01', description: '测试月薪'},
-      {id: 2, amount: 60000, type: 'bonus', record_date: '2025-12-20', description: '测试年终奖'}
-    ]
   } finally {
     loading.value = false
   }

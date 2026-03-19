@@ -480,6 +480,7 @@
 import {ref, onMounted, computed, watch, h} from 'vue'
 import {supabase} from '../../supabase.js'
 import {useMessage, NIcon, NButton} from 'naive-ui'
+import {useAuthStore} from '../../stores/auth.js'
 import {use} from 'echarts/core'
 import {CanvasRenderer} from 'echarts/renderers'
 import {LineChart, BarChart, PieChart} from 'echarts/charts'
@@ -530,6 +531,9 @@ import {labelWidth, valueWidth, percentWidth,pagination} from '../../utils/Table
 
 // 获取消息实例
 const message = useMessage()
+
+// 获取认证状态
+const authStore = useAuthStore()
 
 // 数据状态
 const loading = ref(false)
@@ -1204,15 +1208,32 @@ const annualBarChartOption = computed(() => {
 
 // 当前选中月份的数据
 const currentMonthItems = computed(() => {
-  // 获取当前选中的月份
-  const selected = selectedDate.value ? new Date(selectedDate.value) : new Date()
-  const year = selected.getFullYear()
-  const month = selected.getMonth()
+  // 如果用户选择了月份，使用选中的月份
+  if (selectedDate.value) {
+    const selected = new Date(selectedDate.value)
+    const year = selected.getFullYear()
+    const month = selected.getMonth()
 
-  // 根据月份过滤数据
+    return filteredItems.value.filter(item => {
+      const itemDate = new Date(item.record_date)
+      return itemDate.getFullYear() === year && itemDate.getMonth() === month
+    })
+  }
+
+  // 否则，获取最新一个月的数据
+  if (filteredItems.value.length === 0) return []
+
+  // 找到最新的日期
+  const latestDate = new Date(Math.max(...filteredItems.value.map(item => new Date(item.record_date))))
+  const latestYear = latestDate.getFullYear()
+  const latestMonth = latestDate.getMonth()
+
+  console.log('使用最新月份数据:', `${latestYear}-${latestMonth + 1}`)
+
+  // 返回最新月份的数据
   return filteredItems.value.filter(item => {
     const itemDate = new Date(item.record_date)
-    return itemDate.getFullYear() === year && itemDate.getMonth() === month
+    return itemDate.getFullYear() === latestYear && itemDate.getMonth() === latestMonth
   })
 })
 
@@ -1223,6 +1244,12 @@ const assetPieData = computed(() => {
   const primaryCategoryMap = new Map()
   // 二级分类：一级分类名称 -> 二级分类名称 -> 金额
   const secondaryCategoryGroupMap = new Map()
+
+  console.log('计算资产饼图数据:', {
+    currentMonthItems: currentMonthItems.value.length,
+    categories: categories.value.length,
+    subcategories: subcategories.value.length
+  })
 
   // 2. 遍历数据，统计一级/二级分类金额
   currentMonthItems.value
@@ -1271,10 +1298,14 @@ const assetPieData = computed(() => {
     secondaryData.push(...sortedSecondary)
   })
 
-  return {
+  const result = {
     primary: primaryData,
     secondary: secondaryData
   }
+
+  console.log('资产饼图数据结果:', result)
+
+  return result
 })
 // 负债占比数据 - 嵌套饼图
 const liabilityPieData = computed(() => {
@@ -2060,12 +2091,18 @@ const columns = [
 
 // 方法
 const loadData = async () => {
+  if (!authStore.user) {
+    console.warn('用户未登录，无法加载数据')
+    return
+  }
+
   loading.value = true
   try {
     // 加载一级分类
     const {data: categoriesData} = await supabase
         .from('balance_categories')
         .select('*')
+        .eq('user_id', authStore.user.id)
         .order('created_at', {ascending: true})
     categories.value = categoriesData || []
 
@@ -2073,6 +2110,7 @@ const loadData = async () => {
     const {data: subcategoriesData} = await supabase
         .from('balance_subcategories')
         .select('*')
+        .eq('user_id', authStore.user.id)
         .order('created_at', {ascending: true})
     subcategories.value = subcategoriesData || []
 
@@ -2080,6 +2118,7 @@ const loadData = async () => {
     const {data: itemsData} = await supabase
         .from('balance_items')
         .select('*')
+        .eq('user_id', authStore.user.id)
         .order('record_date', {ascending: false})
     items.value = itemsData || []
 

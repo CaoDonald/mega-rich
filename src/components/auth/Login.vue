@@ -93,15 +93,16 @@
 </template>
 
 <script setup>
-import {ref, reactive, inject, onMounted} from 'vue'
-import {supabase} from '../../supabase.js'
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
+import { useAuth } from '../../composables/useAuth.js'
 
-// 使用 App.vue 提供的页面切换方法
-const navigateTo = inject('navigateTo')
+const router = useRouter()
 const message = useMessage()
+const { login, loading } = useAuth()
+
 const formRef = ref(null)
-const loading = ref(false)
 const showPassword = ref(false)
 
 const formData = reactive({
@@ -111,12 +112,12 @@ const formData = reactive({
 
 const formRules = {
   email: [
-    {required: true, message: '请输入邮箱', trigger: 'blur'},
-    {type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur'}
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
   ],
   password: [
-    {required: true, message: '请输入密码', trigger: 'blur'},
-    {min: 6, message: '密码长度不能少于6个字符', trigger: 'blur'}
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6个字符', trigger: 'blur' }
   ]
 }
 
@@ -125,45 +126,29 @@ const handleLogin = async () => {
 
   try {
     await formRef.value.validate()
-    loading.value = true
 
-    const {error} = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password
-    })
+    const result = await login(formData.email, formData.password)
 
-    if (error) {
-      throw error
+    if (result.success) {
+      message.success('登录成功')
+    } else {
+      message.error(result.error || '登录失败，请检查邮箱和密码')
     }
-
-    message.success('登录成功')
-    navigateTo('home')
   } catch (error) {
     if (error.name === 'ValidateError') {
-      // 表单验证错误，已由组件处理
       return
     }
-    message.error(error.message || '登录失败，请检查邮箱和密码')
-  } finally {
-    loading.value = false
+    message.error(error.message || '登录失败')
   }
 }
 
 const navigateToForgotPassword = () => {
-  navigateTo('forgot-password')
+  router.push({ name: 'forgot-password' })
 }
 
 const navigateToRegister = () => {
-  navigateTo('register')
+  router.push({ name: 'register' })
 }
-
-// 页面加载时检查是否有密码重置会话
-onMounted(async () => {
-  const { data, error } = await supabase.auth.getSession()
-  if (data.session && data.session.provider_token) {
-    navigateTo('password-reset')
-  }
-})
 </script>
 
 <style scoped>
@@ -172,70 +157,42 @@ onMounted(async () => {
   justify-content: center;
   align-items: center;
   min-height: calc(100vh - 160px);
-  padding: 20px;
+  padding: var(--spacing-xl);
 }
 
 .login-form-wrapper {
-  background-color: white;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background: var(--color-bg-base);
+  padding: var(--spacing-3xl);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 400px;
-  color: #333 !important;
 }
 
 .login-form-wrapper h2 {
   text-align: center;
-  margin-bottom: 30px;
-  color: #333;
+  margin-bottom: var(--spacing-2xl);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-2xl);
 }
 
 .login-form {
-  margin-bottom: 20px;
-  color: #333;
-}
-
-/* 确保所有表单元素都有正确的颜色 */
-.login-form :deep(.n-form-item-label) {
-  color: #333 !important;
-}
-
-.login-form :deep(.n-input) {
-  background-color: white !important;
-  color: #333 !important;
-}
-
-.login-form :deep(.n-input__input-el) {
-  color: #333 !important;
-}
-
-.login-form :deep(.n-checkbox) {
-  color: #333 !important;
-}
-
-.login-form :deep(.n-checkbox__label) {
-  color: #333 !important;
-}
-
-.password-toggle {
-  display: flex;
-  justify-content: flex-start;
+  margin-bottom: var(--spacing-xl);
 }
 
 .form-links {
   display: flex;
   justify-content: space-between;
-  margin-top: 20px;
-}
-
-.form-links :deep(.n-button) {
-  color: #2080f0 !important;
+  margin-top: var(--spacing-xl);
 }
 
 @media (max-width: 768px) {
+  .login-container {
+    padding: var(--spacing-lg);
+  }
+
   .login-form-wrapper {
-    padding: 20px;
+    padding: var(--spacing-xl);
   }
 }
 </style>
