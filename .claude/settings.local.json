@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm run:*)",
+      "Bash(openspec list:*)",
+      "Bash(openspec new:*)",
+      "Bash(openspec status:*)",
+      "Bash(openspec instructions:*)",
+      "Bash(pnpm add:*)",
+      "Bash(cd:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(npx openspec:*)",
+      "Bash(cmd //c \"move \\\\\"D:\\\\\\\\develop\\\\\\\\vscode\\\\\\\\mega-rich\\\\\\\\openspec\\\\\\\\changes\\\\\\\\fix-router-auth-delay\\\\\" \\\\\"D:\\\\\\\\develop\\\\\\\\vscode\\\\\\\\mega-rich\\\\\\\\openspec\\\\\\\\changes\\\\\\\\archive\\\\\\\\2026-03-18-fix-router-auth-delay\\\\\"\")"
+    ]
+  }
+}
