@@ -182,11 +182,12 @@ const handleSearch = async (value) => {
     searching.value = true
     try {
       const result = await searchFund(value)
-      if (result && result.data && result.data.length > 0) {
-        searchResults.value = result.data
-        fundOptions.value = result.data.map(fund => ({
-          label: `${fund.FCODE} - ${fund.SHORTNAME}`,
-          value: fund.FCODE,
+      const funds = result?.data?.data
+      if (funds && funds.length > 0) {
+        searchResults.value = funds
+        fundOptions.value = funds.map(fund => ({
+          label: `${fund.fcode} - ${fund.shortname}`,
+          value: fund.fcode,
           fund: fund
         }))
       } else {
@@ -204,13 +205,19 @@ const handleSearch = async (value) => {
 
 // 选择基金
 const handleSelectFund = (value, option) => {
-  if (option && option.fund) {
-    const fund = option.fund
-    formData.fund_code = fund.FCODE
-    formData.fund_name = fund.SHORTNAME
-    // 尝试从搜索结果中获取净值
-    if (fund.NAV) {
-      formData.current_nav = parseFloat(fund.NAV)
+  // n-auto-complete select 事件只传 value，从 searchResults 中找对应基金
+  const fund = option?.fund || searchResults.value.find(f => f.fcode === value)
+  if (fund) {
+    formData.fund_code = fund.fcode
+    formData.fund_name = fund.shortname
+    if (fund.ftype) {
+      // 将 API 返回的 ftype（如"指数型-海外股票"）映射到基金类型
+      const typeMap = {
+        '股票型': '股票型', '混合型': '混合型', '债券型': '债券型',
+        '指数型': '指数型', 'QDII': 'QDII', '货币型': '货币型', 'FOF': 'FOF'
+      }
+      const matched = Object.keys(typeMap).find(k => fund.ftype.includes(k))
+      if (matched) formData.fund_type = typeMap[matched]
     }
   }
 }

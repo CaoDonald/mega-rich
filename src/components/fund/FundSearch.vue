@@ -24,22 +24,16 @@
       <div v-else-if="results.length > 0" class="results-list">
         <div
           v-for="fund in results"
-          :key="fund.FCODE"
+          :key="fund.fcode"
           class="result-item"
         >
           <div class="fund-info" @click="handleViewDetail(fund)">
             <div class="fund-header">
-              <span class="fund-code">{{ fund.FCODE }}</span>
-              <span class="fund-name">{{ fund.SHORTNAME }}</span>
+              <span class="fund-code">{{ fund.fcode }}</span>
+              <span class="fund-name">{{ fund.shortname }}</span>
             </div>
             <div class="fund-meta">
-              <span class="fund-type">{{ fund.FundBaseInfo?.FTYPE || '其他' }}</span>
-              <span class="fund-nav">净值: {{ fund.NAV || '--' }}</span>
-              <span
-                :class="['fund-change', getChangeClass(fund.NAVCHGRT)]"
-              >
-                {{ formatChange(fund.NAVCHGRT) }}
-              </span>
+              <span class="fund-type">{{ fund.ftype || '其他' }}</span>
             </div>
           </div>
 
@@ -109,8 +103,8 @@ const performSearch = async () => {
   try {
     const result = await searchFund(keyword.value.trim())
 
-    if (result && result.data && result.data.datas) {
-      results.value = result.data.datas
+    if (result?.data?.data?.length > 0) {
+      results.value = result.data.data
     } else {
       results.value = []
     }
@@ -136,7 +130,7 @@ const handleAddToHolding = (fund) => {
 // 添加到关注
 const handleAddToWatchlist = async (fund) => {
   try {
-    const result = await addToWatchlist(fund.FCODE, fund.SHORTNAME)
+    const result = await addToWatchlist(fund.fcode, fund.shortname)
     if (result.success) {
       message.success('已添加到关注列表')
     } else {
@@ -147,21 +141,6 @@ const handleAddToWatchlist = async (fund) => {
   }
 }
 
-// 格式化涨跌幅
-const formatChange = (value) => {
-  if (!value || value === '--') return '--'
-  const num = parseFloat(value)
-  if (isNaN(num)) return '--'
-  return num > 0 ? `+${num.toFixed(2)}%` : `${num.toFixed(2)}%`
-}
-
-// 获取涨跌幅样式类
-const getChangeClass = (value) => {
-  if (!value || value === '--') return ''
-  const num = parseFloat(value)
-  if (isNaN(num)) return ''
-  return num > 0 ? 'positive' : num < 0 ? 'negative' : ''
-}
 </script>
 
 <style scoped>

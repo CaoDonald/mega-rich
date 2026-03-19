@@ -72,7 +72,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { NPagination, useMessage } from 'naive-ui'
-import FundApi from '../../utils/FundApi.js'
+import { fundMNRank } from '../../utils/FundApi.js'
 import Loading from '../base/Loading.vue'
 import Empty from '../base/Empty.vue'
 
@@ -105,7 +105,7 @@ const loadRankList = async () => {
   loading.value = true
 
   try {
-    const result = await FundApi.fundMNRank(
+    const result = await fundMNRank(
       props.fundType,
       props.sortColumn,
       props.sortOrder,
