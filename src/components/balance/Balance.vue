@@ -94,7 +94,7 @@
             </template>
             <div class="statistics-help-content">
               <div>广义金额：当月所有金额之和。</div>
-              <div>可支配金额：广义金额减去一级分类为“房贷”及二级分类为“蜻蜓点金”的金额。</div>
+              <div>可支配金额：广义金额减去一级分类为“房贷”的金额。</div>
               <div>增长：当前月份金额减去上月金额。</div>
               <div>环比：增长额除以上月金额绝对值。</div>
               <div>同比：当前月份金额相较去年同月的变化比例。</div>
@@ -1516,7 +1516,7 @@ const calculateBroadAndDisposableAmount = (items) => {
   // 广义金额：所有金额之和
   const broadAmount = items.reduce((sum, item) => sum + item.amount, 0)
 
-  // 计算可支配金额：广义金额减去一级分类为房贷和二级分类为蜻蜓点金的金额
+  // 计算可支配金额：广义金额减去一级分类为房贷的金额
   const nonDisposableAmount = items.reduce((sum, item) => {
     // 查找二级分类
     const subcategory = subcategories.value.find(s => s.id === item.subcategory_id)
@@ -1526,8 +1526,8 @@ const calculateBroadAndDisposableAmount = (items) => {
     const category = categories.value.find(c => c.id === subcategory.category_id)
     if (!category) return sum
 
-    // 检查是否为房贷一级分类或蜻蜓点金二级分类
-    if (category.name === '房贷' || subcategory.name === '蜻蜓点金') {
+    // 检查是否为房贷一级分类
+    if (category.name === '房贷') {
       return sum + item.amount
     }
 
@@ -1629,7 +1629,7 @@ const dateGroupedStats = computed(() => {
     // 广义金额：当日所有金额之和
     const broadAmount = stat.items.reduce((sum, item) => sum + item.amount, 0)
 
-    // 计算可支配金额：广义金额减去一级分类为房贷和二级分类为蜻蜓点金的金额
+    // 计算可支配金额：广义金额减去一级分类为房贷的金额
     const nonDisposableAmount = stat.items.reduce((sum, item) => {
       // 查找二级分类
       const subcategory = subcategories.value.find(s => s.id === item.subcategory_id)
@@ -1639,8 +1639,8 @@ const dateGroupedStats = computed(() => {
       const category = categories.value.find(c => c.id === subcategory.category_id)
       if (!category) return sum
 
-      // 检查是否为房贷一级分类或蜻蜓点金二级分类
-      if (category.name === '房贷' || subcategory.name === '蜻蜓点金') {
+      // 检查是否为房贷一级分类
+      if (category.name === '房贷') {
         return sum + item.amount
       }
 
@@ -2739,8 +2739,8 @@ const handlePrimaryCategoriesUpdate = async (updatedCategories) => {
       if (error) throw error
     }
 
-    // 更新本地状态
-    categories.value = updatedCategories
+    // 重新拉取数据，避免保留前端临时ID
+    await loadData()
     message.success('一级分类管理成功')
   } catch (error) {
     console.error('管理一级分类失败:', error)
@@ -2807,8 +2807,8 @@ const handleSecondaryCategoriesUpdate = async (updatedSubcategories) => {
       if (error) throw error
     }
 
-    // 更新本地状态
-    subcategories.value = updatedSubcategories
+    // 重新拉取数据，避免保留前端临时ID
+    await loadData()
     message.success('二级分类管理成功')
   } catch (error) {
     console.error('管理二级分类失败:', error)
