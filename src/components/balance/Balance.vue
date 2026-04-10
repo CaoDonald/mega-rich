@@ -84,7 +84,7 @@
       <n-card size="small">
         <div class="statistics-header">
           <h3>统计信息</h3>
-          <n-popover trigger="click" placement="right">
+          <n-popover trigger="hover" placement="bottom-end">
             <template #trigger>
               <button type="button" class="statistics-help-button" aria-label="查看计算规则">
                 <n-icon>
@@ -93,11 +93,27 @@
               </button>
             </template>
             <div class="statistics-help-content">
-              <div>广义金额：当月所有金额之和。</div>
-              <div>可支配金额：广义金额减去一级分类为“房贷”的金额。</div>
-              <div>增长：当前月份金额减去上月金额。</div>
-              <div>环比：增长额除以上月金额绝对值。</div>
-              <div>同比：当前月份金额相较去年同月的变化比例。</div>
+              <div class="statistics-help-title">计算规则</div>
+              <div class="statistics-help-item">
+                <span class="statistics-help-label">广义金额</span>
+                <span>当月所有金额之和。</span>
+              </div>
+              <div class="statistics-help-item">
+                <span class="statistics-help-label">可支配金额</span>
+                <span>广义金额减去一级分类为“房贷”的金额。</span>
+              </div>
+              <div class="statistics-help-item">
+                <span class="statistics-help-label">增长</span>
+                <span>当前月份金额减去上月金额。</span>
+              </div>
+              <div class="statistics-help-item">
+                <span class="statistics-help-label">环比</span>
+                <span>增长额除以上月金额绝对值。</span>
+              </div>
+              <div class="statistics-help-item">
+                <span class="statistics-help-label">同比</span>
+                <span>当前月份金额相较去年同月的变化比例。</span>
+              </div>
             </div>
           </n-popover>
         </div>
@@ -2598,12 +2614,13 @@ watch(
 
 const handleAddItem = async (formData) => {
   try {
+    const recordDate = new Date(formData.record_date).toISOString().split('T')[0]
     const {data, error} = await supabase
         .from('balance_items')
         .insert({
           subcategory_id: formData.subcategory_id,
           amount: formData.amount,
-          record_date: formData.record_date,
+          record_date: recordDate,
           description: formData.description
         })
         .select()
@@ -2627,12 +2644,13 @@ const handleEditItem = (item) => {
 
 const handleUpdateItem = async (formData) => {
   try {
+    const recordDate = new Date(formData.record_date).toISOString().split('T')[0]
     const {data, error} = await supabase
         .from('balance_items')
         .update({
           subcategory_id: formData.subcategory_id,
           amount: formData.amount,
-          record_date: formData.record_date,
+          record_date: recordDate,
           description: formData.description
         })
         .eq('id', formData.id)
@@ -3154,41 +3172,80 @@ onMounted(() => {
 }
 
 .statistics-header {
+  position: relative;
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
+  min-height: 32px;
 }
 
 .statistics-header h3 {
   margin: 0;
+  text-align: center;
 }
 
 .statistics-help-button {
+  position: absolute;
+  right: 0;
+  top: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
   color: var(--custom-color-secondary);
   cursor: pointer;
+  transform: translateY(-50%);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(8px);
   transition: all 0.2s ease;
 }
 
 .statistics-help-button:hover {
   color: var(--custom-color);
-  border-color: var(--custom-color-secondary);
-  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
 }
 
 .statistics-help-content {
-  max-width: 320px;
-  line-height: 1.7;
+  max-width: 340px;
+  padding: 4px 2px;
   color: var(--custom-color);
+}
+
+.statistics-help-title {
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--custom-color);
+}
+
+.statistics-help-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  line-height: 1.6;
+}
+
+.statistics-help-item + .statistics-help-item {
+  margin-top: 8px;
+}
+
+.statistics-help-label {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--custom-color-secondary);
 }
 
 .amounts-table-section {
@@ -3249,6 +3306,10 @@ onMounted(() => {
 
   .statistics-help-content {
     max-width: 260px;
+  }
+
+  .statistics-header {
+    padding-right: 40px;
   }
 
   .actions-cell {
@@ -3342,6 +3403,7 @@ onMounted(() => {
 
   .statistics-header {
     margin-bottom: 12px;
+    padding-right: 40px;
   }
 
   .items-list {
