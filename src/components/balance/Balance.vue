@@ -82,7 +82,25 @@
     <!-- 统计信息 -->
     <div class="statistics-section">
       <n-card size="small">
-        <h3>统计信息</h3>
+        <div class="statistics-header">
+          <h3>统计信息</h3>
+          <n-popover trigger="click" placement="right">
+            <template #trigger>
+              <button type="button" class="statistics-help-button" aria-label="查看计算规则">
+                <n-icon>
+                  <HelpCircleOutline/>
+                </n-icon>
+              </button>
+            </template>
+            <div class="statistics-help-content">
+              <div>广义金额：当月所有金额之和。</div>
+              <div>可支配金额：广义金额减去一级分类为“房贷”及二级分类为“蜻蜓点金”的金额。</div>
+              <div>增长：当前月份金额减去上月金额。</div>
+              <div>环比：增长额除以上月金额绝对值。</div>
+              <div>同比：当前月份金额相较去年同月的变化比例。</div>
+            </div>
+          </n-popover>
+        </div>
         <div class="stats-grid">
           <div class="stat-item">
             <n-statistic label="广义金额" :value="latestMonthStats.broadAmount">
@@ -519,6 +537,7 @@ import {
   CashOutline,
   CaretUpOutline,
   CaretDownOutline,
+  HelpCircleOutline,
   CloudUploadOutline,
   CloudDownloadOutline
 } from '@vicons/ionicons5'
@@ -3134,6 +3153,44 @@ onMounted(() => {
   gap: 10px;
 }
 
+.statistics-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.statistics-header h3 {
+  margin: 0;
+}
+
+.statistics-help-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--custom-color-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.statistics-help-button:hover {
+  color: var(--custom-color);
+  border-color: var(--custom-color-secondary);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.statistics-help-content {
+  max-width: 320px;
+  line-height: 1.7;
+  color: var(--custom-color);
+}
+
 .amounts-table-section {
   margin-bottom: 30px;
   width: 100%; /* 强制容器宽度100% */
@@ -3188,6 +3245,10 @@ onMounted(() => {
 
   .stat-item :deep(.n-statistic-value) {
     font-size: 1.5rem;
+  }
+
+  .statistics-help-content {
+    max-width: 260px;
   }
 
   .actions-cell {
@@ -3277,6 +3338,10 @@ onMounted(() => {
 
   .statistics-section {
     margin-bottom: 20px;
+  }
+
+  .statistics-header {
+    margin-bottom: 12px;
   }
 
   .items-list {

@@ -9,8 +9,10 @@ const TEST_CONFIG = {
     PAGE_SIZE: 5
 };
 
+const TEST_TIMEOUT = 60_000;
+
 // 全局测试描述
-describe('基金接口自动化测试', () => {
+describe('基金接口自动化测试', { timeout: TEST_TIMEOUT }, () => {
     console.log('🚀 开始执行 基金接口自动化测试\n');
 
     // ====================== 基金搜索接口测试 ======================

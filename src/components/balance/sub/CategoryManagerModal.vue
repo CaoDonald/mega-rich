@@ -26,7 +26,7 @@
         <div class="category-section">
           <div class="section-header">
           <h3>二级分类列表</h3>
-          <n-button type="primary" @click="showSecondaryCategoryForm = true">
+          <n-button type="primary" @click="handleAddSecondaryCategory">
             <template #icon>
               <n-icon><AddOutline /></n-icon>
             </template>
@@ -319,6 +319,16 @@ const editSecondaryCategory = (category) => {
     category_id: category.category_id,
     name: category.name,
     description: category.description
+  }
+  showSecondaryCategoryForm.value = true
+}
+
+const handleAddSecondaryCategory = () => {
+  editingSecondaryCategory.value = null
+  secondaryCategoryForm.value = {
+    category_id: selectedPrimaryCategory.value || null,
+    name: '',
+    description: ''
   }
   showSecondaryCategoryForm.value = true
 }
