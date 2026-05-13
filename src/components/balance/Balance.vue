@@ -1674,12 +1674,31 @@ const dateGroupedStats = computed(() => {
     }
   }).sort((a, b) => new Date(a.date) - new Date(b.date)) // 先按日期正序排列，方便计算指标
 
+  // 按月份分组统计，用于同比计算
+  const monthStatsMap = new Map()
+  basicStats.forEach(stat => {
+    const currentDate = new Date(stat.date)
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+    const monthKey = `${year}-${month}`
+
+    if (!monthStatsMap.has(monthKey)) {
+      monthStatsMap.set(monthKey, {
+        broadAmount: 0,
+        disposableAmount: 0
+      })
+    }
+
+    const monthStat = monthStatsMap.get(monthKey)
+    monthStat.broadAmount += stat.broadAmount
+    monthStat.disposableAmount += stat.disposableAmount
+  })
+
   // 计算增长、环比、同比指标
   return basicStats.map((stat, index) => {
     const currentDate = new Date(stat.date)
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
-    const day = currentDate.getDate()
 
     // 广义金额指标
     // 1. 增长（与前一天比较）
@@ -1687,13 +1706,12 @@ const dateGroupedStats = computed(() => {
     const broadGrowth = stat.broadAmount - prevBroadAmount
     const broadGrowthRate = prevBroadAmount === 0 ? 0 : ((broadGrowth / Math.abs(prevBroadAmount)) * 100)
 
-    // 2. 同比（与去年同期比较）
-    const sameDayLastYearDate = new Date(year - 1, month, day)
-    const sameDayLastYearKey = sameDayLastYearDate.toISOString().split('T')[0]
-    const sameDayLastYearStat = basicStats.find(s => s.date === sameDayLastYearKey)
-    const sameDayLastYearBroadAmount = sameDayLastYearStat?.broadAmount || 0
-    const broadYoyGrowth = stat.broadAmount - sameDayLastYearBroadAmount
-    const broadYoyGrowthRate = sameDayLastYearBroadAmount === 0 ? 0 : ((broadYoyGrowth / Math.abs(sameDayLastYearBroadAmount)) * 100)
+    // 2. 同比（与去年同月比较）
+    const sameMonthLastYearKey = `${year - 1}-${month}`
+    const sameMonthLastYearStat = monthStatsMap.get(sameMonthLastYearKey)
+    const sameMonthLastYearBroadAmount = sameMonthLastYearStat?.broadAmount || 0
+    const broadYoyGrowth = stat.broadAmount - sameMonthLastYearBroadAmount
+    const broadYoyGrowthRate = sameMonthLastYearBroadAmount === 0 ? 0 : ((broadYoyGrowth / Math.abs(sameMonthLastYearBroadAmount)) * 100)
 
     // 可支配金额指标
     // 1. 增长（与前一天比较）
@@ -1701,10 +1719,10 @@ const dateGroupedStats = computed(() => {
     const disposableGrowth = stat.disposableAmount - prevDisposableAmount
     const disposableGrowthRate = prevDisposableAmount === 0 ? 0 : ((disposableGrowth / Math.abs(prevDisposableAmount)) * 100)
 
-    // 2. 同比（与去年同期比较）
-    const sameDayLastYearDisposableAmount = sameDayLastYearStat?.disposableAmount || 0
-    const disposableYoyGrowth = stat.disposableAmount - sameDayLastYearDisposableAmount
-    const disposableYoyGrowthRate = sameDayLastYearDisposableAmount === 0 ? 0 : ((disposableYoyGrowth / Math.abs(sameDayLastYearDisposableAmount)) * 100)
+    // 2. 同比（与去年同月比较）
+    const sameMonthLastYearDisposableAmount = sameMonthLastYearStat?.disposableAmount || 0
+    const disposableYoyGrowth = stat.disposableAmount - sameMonthLastYearDisposableAmount
+    const disposableYoyGrowthRate = sameMonthLastYearDisposableAmount === 0 ? 0 : ((disposableYoyGrowth / Math.abs(sameMonthLastYearDisposableAmount)) * 100)
 
     return {
       ...stat,
