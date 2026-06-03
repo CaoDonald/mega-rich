@@ -1,8 +1,8 @@
 import { createApp } from 'vue'
-import { create } from 'naive-ui' // 新增 NMessageProvider（useMessage 依赖）
+import { create } from 'naive-ui'
 import App from './App.vue'
-import './styles/component.css'    // 引入抽离的按钮样式
-// 导入需要全局注册的组件
+import router from './router'
+import './styles/component.css'
 import {
     NEmpty,
     NSkeleton,
@@ -82,5 +82,6 @@ const naive = create({
 const app = createApp(App)
 
 app.use(naive)
+app.use(router)
 
 app.mount('#app')

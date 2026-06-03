@@ -54,12 +54,15 @@
 <script setup>
 import { NButton } from 'naive-ui'
 import { CashOutline, BarChartOutline, ShieldCheckmarkOutline, WalletOutline, TrendingUpOutline } from '@vicons/ionicons5'
-import { inject } from 'vue'
+import { useRouter } from 'vue-router'
 
-const navigateTo = inject('navigateTo')
+const router = useRouter()
+
+const navigateTo = (name) => {
+  router.push({ name })
+}
 
 const exploreFeatures = () => {
-  // 这里可以添加探索功能的逻辑
   console.log('探索功能')
 }
 </script>

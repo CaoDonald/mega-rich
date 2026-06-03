@@ -32,6 +32,20 @@
     border-color: var(--custom-color-brand-hover);
 }
 
+/* 移动端：操作按钮垂直排列 */
+@media (max-width: 768px) {
+    .action-buttons {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .action-buttons .n-button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
 .filter-section {
     display: flex;
     gap: 15px;
@@ -42,6 +56,22 @@
     background-color: rgba(255, 255, 255, 0.1);
     border-radius: var(--custom-border-radius);
     border: var(--custom-border);
+}
+
+/* 移动端：筛选区域优化 */
+@media (max-width: 768px) {
+    .filter-section {
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px;
+        margin-bottom: 20px;
+    }
+
+    .filter-select {
+        width: 100%;
+        max-width: 100%;
+        min-width: auto;
+    }
 }
 
 .statistics-section {
@@ -103,6 +133,37 @@
     font-weight: 500;
 }
 
+/* 移动端：统计网格单列 */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .stat-item {
+        padding: 15px 10px;
+    }
+
+    .stat-item .n-statistic-value {
+        font-size: 1.4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .stat-item {
+        padding: 12px 10px;
+    }
+
+    .stat-item .n-statistic-value {
+        font-size: 1.2rem;
+    }
+}
+
 .items-list {
     margin-bottom: 30px;
 }
@@ -149,3 +210,9 @@
     justify-content: center;
 }
 
+/* 移动端：表格允许横向滚动 */
+@media (max-width: 768px) {
+    .items-list .n-card {
+        overflow-x: auto;
+    }
+}

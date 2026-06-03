@@ -112,7 +112,9 @@ import { ref, reactive, onMounted, inject, computed } from 'vue'
 import { supabase } from '../../supabase.js'
 import { useMessage } from 'naive-ui'
 
-const navigateTo = inject('navigateTo')
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const navigateTo = (name) => router.push({ name })
 const message = useMessage()
 const formRef = ref(null)
 const loading = ref(false)

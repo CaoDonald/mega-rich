@@ -130,8 +130,9 @@ import { ref, reactive, onMounted, inject, computed, watch } from 'vue'
 import { supabase } from '../../supabase.js'
 import { useMessage, NSpin } from 'naive-ui'
 
-const navigateTo = inject('navigateTo')
-const currentPage = inject('currentPage')
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const navigateTo = (name) => router.push({ name })
 const loadUser = inject('loadUser')
 const message = useMessage()
 const formRef = ref(null)

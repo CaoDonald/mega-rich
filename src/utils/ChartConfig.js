@@ -69,7 +69,7 @@ const commonChartConfig = {
         padding: 10,
         zlevel: 200,
         confine: true,
-        appendToBody: false,
+        appendToBody: true,
         textStyle: {
             fontSize: baseTextStyle.fontSize,
             zlevel: 200
@@ -132,6 +132,33 @@ const commonChartConfig = {
     }
 };
 
+// 移动端图表配置覆盖
+const mobileChartConfig = {
+    grid: {
+        left: '3%',
+        right: '3%',
+        bottom: '15%',
+        top: '25%',
+        containLabel: true
+    },
+    legend: {
+        bottom: 0,
+        top: 'auto',
+        orient: 'horizontal',
+        textStyle: {
+            fontSize: '10px'
+        },
+        itemWidth: 8,
+        itemHeight: 8
+    },
+    xAxis: {
+        axisLabel: {
+            fontSize: '8px',
+            margin: 4
+        }
+    }
+};
+
 // 饼图通用配置
 const pieChartCommonConfig = {
     ...commonChartConfig,
@@ -140,7 +167,8 @@ const pieChartCommonConfig = {
         formatter: '{b}: {c}元 ({d}%)',
         textStyle: {
             fontSize: baseTextStyle.fontSize
-        }
+        },
+        appendToBody: true
     },
     legend: {
         top: 'bottom',
@@ -184,5 +212,6 @@ export {
     baseTextStyle,
     commonAxisPointer,
     commonChartConfig,
+    mobileChartConfig,
     pieChartCommonConfig
 };

@@ -2,7 +2,7 @@
   <n-layout>
     <n-layout-header bordered>
       <div class="header-content">
-        <div class="logo" @click="navigateTo('home')" style="cursor: pointer;">
+        <div class="logo" @click="goHome" style="cursor: pointer;">
           <h1>Mega Rich</h1>
         </div>
 
@@ -15,19 +15,19 @@
             :options="dropdownOptions"
             @select="handleDropdownSelect"
           >
-              <n-avatar
-                :size="40"
-                :src="avatarSrc"
-                fallback-src=""
-                class="avatar"
-              />
+            <n-avatar
+              :size="40"
+              :src="avatarSrc"
+              fallback-src=""
+              class="avatar"
+            />
           </n-dropdown>
 
           <!-- 未登录 -->
           <n-button
             v-else
             type="primary"
-            @click="handleLoginClick"
+            @click="goLogin"
           >
             登录
           </n-button>
@@ -35,45 +35,44 @@
       </div>
     </n-layout-header>
 
-    <n-layout-content>
+    <n-layout-content :class="{ 'mobile-content-wrapper': isMobile }">
       <slot />
     </n-layout-content>
 
-    <n-layout-footer bordered>
+    <!-- 桌面端 Footer -->
+    <n-layout-footer v-if="!isMobile" bordered>
       <div class="footer-content">
         <p>© 2025 Mega Rich. All rights reserved.</p>
       </div>
     </n-layout-footer>
+
+    <!-- 移动端底部 Tab 导航 -->
+    <MobileTabBar v-if="isMobile" />
   </n-layout>
 </template>
 
 <script setup>
-import { ref,onMounted,inject, watch } from 'vue'
-import {supabase} from "../supabase.js";
+import { ref, onMounted, inject, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { supabase } from '../supabase.js'
+import { isMobile } from '../utils/device.js'
+import MobileTabBar from './MobileTabBar.vue'
 
-const navigateTo = inject('navigateTo')
-const currentPage = inject('currentPage')
+const router = useRouter()
 const user = inject('user')
 const session = inject('session')
 const loadUser = inject('loadUser')
 const avatarSrc = ref('')
 
-/** 下拉菜单选项（Naive UI 正确用法） */
+/** 下拉菜单选项 */
 const dropdownOptions = [
-  {
-    label: '设置',
-    key: 'settings'
-  },
-  {
-    label: '退出',
-    key: 'logout'
-  }
+  { label: '设置', key: 'settings' },
+  { label: '退出', key: 'logout' }
 ]
 
 const loadAvatar = async () => {
   if (user.value?.avatar_url) {
     try {
-      // 从URL中提取文件路径（去掉存储桶名称）
       const path = user.value.avatar_url.split('/avatars/')[1]
       if (path) {
         const { data, error } = await supabase.storage.from('avatars').download(path)
@@ -81,14 +80,14 @@ const loadAvatar = async () => {
         avatarSrc.value = URL.createObjectURL(data)
       }
     } catch (error) {
-      console.error('加载头像失败:', error);
+      console.error('加载头像失败:', error)
     }
   } else {
-    avatarSrc.value = '';
+    avatarSrc.value = ''
   }
-};
+}
 
-// 监听用户信息变化，重新加载头像
+// 监听用户信息变化
 watch(user, (newUser) => {
   if (newUser) {
     loadAvatar()
@@ -97,32 +96,26 @@ watch(user, (newUser) => {
   }
 }, { immediate: true, deep: true })
 
+const goHome = () => router.push('/')
+const goLogin = () => router.push('/login')
+
 const handleDropdownSelect = (key) => {
   if (key === 'settings') {
-    navigateTo('user-settings')
+    router.push('/user-settings')
   } else if (key === 'logout') {
     handleLogout()
   }
 }
 
+const handleLogout = async () => {
+  await supabase.auth.signOut()
+  avatarSrc.value = ''
+  router.push('/')
+}
 
 onMounted(() => {
   loadAvatar()
 })
-
-const handleLoginClick = () => {
-  navigateTo('login')
-}
-
-const handleLogout = async () => {
-  await supabase.auth.signOut()
-  user.value = null
-  session.value = null
-  avatarSrc.value = ''
-  navigateTo('home')
-}
-
-
 </script>
 
 <style scoped>
@@ -158,7 +151,7 @@ const handleLogout = async () => {
 
 .avatar {
   cursor: pointer;
-  border-radius: 8px
+  border-radius: 8px;
 }
 
 .footer-content {
@@ -167,6 +160,11 @@ const handleLogout = async () => {
   align-items: center;
   padding: 20px;
   text-align: center;
+}
+
+/* 移动端内容区底部留白 */
+.mobile-content-wrapper {
+  padding-bottom: calc(var(--tab-bar-height, 56px) + env(safe-area-inset-bottom, 0px) + 10px);
 }
 
 /* 移动端响应式设计 */

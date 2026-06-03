@@ -59,13 +59,29 @@
     <!-- 数据列表 -->
     <div class="records-list">
       <n-card size="small">
-        <n-data-table
+        <card-list-view
             :columns="columns"
             :data="filteredRecords"
             :loading="loading"
             :row-key="row => row.id"
             :pagination="pagination"
-        />
+            :get-cell-text="getCellText"
+        >
+          <!-- 操作列卡片渲染 -->
+          <template #actions="{ row }">
+            <div class="card-action-btns">
+              <div class="icon-btn icon-btn-primary" @click="() => { viewingRecord = {...row}; showViewModal = true }" title="查看">
+                <n-icon :size="18"><EyeOutline /></n-icon>
+              </div>
+              <div class="icon-btn icon-btn-info" @click="() => { editingRecord = {...row}; showEditModal = true }" title="编辑">
+                <n-icon :size="18"><CreateOutline /></n-icon>
+              </div>
+              <div class="icon-btn icon-btn-error" @click="() => { deletingRecord = {...row}; showDeleteConfirm = true }" title="删除">
+                <n-icon :size="18"><TrashOutline /></n-icon>
+              </div>
+            </div>
+          </template>
+        </card-list-view>
       </n-card>
     </div>
 
@@ -145,6 +161,7 @@
         title="新增月薪记录"
         preset="dialog"
         :destroy-on-close="true"
+        :style="modalStyle"
     >
       <AddEditRecordForm
           :existing-records="records.value"
@@ -159,6 +176,7 @@
         title="编辑月薪记录"
         preset="dialog"
         :destroy-on-close="true"
+        :style="modalStyle"
     >
       <AddEditRecordForm
           v-if="editingRecord"
@@ -175,6 +193,7 @@
         title="月薪记录详情"
         preset="dialog"
         :destroy-on-close="true"
+        :style="modalStyle"
     >
       <RecordDetail
           v-if="viewingRecord"
@@ -191,6 +210,7 @@
         negative-text="取消"
         positive-text="删除"
         @positive-click="confirmDelete"
+        :style="modalStyle"
     >
       <div class="delete-confirm-content">
         <p>确定要删除这条记录吗？</p>
@@ -206,6 +226,7 @@
         title="批量导入月薪记录"
         preset="dialog"
         :destroy-on-close="true"
+        :style="modalStyle"
     >
       <div class="batch-import-container">
         <div class="import-info">
@@ -262,6 +283,7 @@
 
 <script setup>
 import {ref, onMounted, computed, h, watch} from 'vue'
+import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import {use} from 'echarts/core'
 import {LineChart} from 'echarts/charts'
@@ -303,9 +325,30 @@ import {
 
 import AddEditRecordForm from './sub/AddEditRecordForm.vue'
 import RecordDetail from './sub/RecordDetail.vue'
+import CardListView from '../CardListView.vue'
 import {labelWidth, valueWidth, percentWidth,pagination} from '../../utils/TableConfig.js'
 import {commonChartConfig, pieChartCommonConfig} from '../../utils/ChartConfig.js'
+import { useMobileModal } from '../../composables/useMobileModal.js'
 import VChart from "vue-echarts";
+
+const router = useRouter()
+const { modalStyle, isMobile } = useMobileModal()
+
+// 卡片布局自定义文本提取
+const getCellText = (row, col) => {
+  switch (col.key) {
+    case 'type': return row.type === 'salary' ? '月薪' : '年终奖'
+    case 'amount': return `${row.amount?.toFixed(2) || 0}元`
+    case 'record_date': return new Date(row.record_date).toLocaleDateString()
+    case 'growth': {
+      const v = parseFloat(row.growth || 0)
+      return `${v >= 0 ? '+' : ''}${v.toFixed(2)}元`
+    }
+    case 'mom': return `${row.mom || 0}%`
+    case 'yoy': return `${row.yoy || 0}%`
+    default: return row[col.key] ?? ''
+  }
+}
 
 // 基础状态
 const message = useMessage()
@@ -316,7 +359,7 @@ const selectedDate = ref(null)
 
 // 图表相关状态
 const timeRange = ref('all') // 'all', '1y', '3y', 'thisYear'
-const chartHeight = ref('350px')
+const chartHeight = computed(() => isMobile.value ? '250px' : '350px')
 
 
 // 弹窗状态
@@ -1948,5 +1991,55 @@ const downloadTemplate = () => {
 /* 点击反馈 */
 :deep(.icon-btn:active) {
   transform: scale(0.95);
+}
+
+/* 卡片操作按钮 */
+.card-action-btns {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.card-action-btns .icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #aaa;
+}
+
+.card-action-btns .icon-btn:active {
+  transform: scale(0.92);
+}
+
+.card-action-btns .icon-btn-primary:active {
+  color: #18a058;
+  background-color: rgba(24, 160, 88, 0.1);
+}
+
+.card-action-btns .icon-btn-info:active {
+  color: #2080f0;
+  background-color: rgba(32, 128, 240, 0.1);
+}
+
+.card-action-btns .icon-btn-error:active {
+  color: #f53f3f;
+  background-color: rgba(245, 63, 63, 0.1);
+}
+
+@media (max-width: 768px) {
+  .card-action-btns {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 6px;
+  }
 }
 </style>

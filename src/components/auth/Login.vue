@@ -98,7 +98,9 @@ import {supabase} from '../../supabase.js'
 import { useMessage } from 'naive-ui'
 
 // 使用 App.vue 提供的页面切换方法
-const navigateTo = inject('navigateTo')
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const navigateTo = (name) => router.push({ name })
 const message = useMessage()
 const formRef = ref(null)
 const loading = ref(false)

@@ -68,14 +68,29 @@
     <!-- 资金条目列表 -->
     <div class="items-list">
       <n-card size="small">
-        <n-data-table
+        <card-list-view
             size="small"
             :columns="columns"
             :data="itemsWithGrowthStats"
             :pagination="{...pagination,pageSize:20}"
             :loading="loading"
             :row-key="row => row.id"
-        />
+            :get-cell-text="getCellText"
+        >
+          <template #actions="{ row }">
+            <div class="card-action-btns">
+              <div class="icon-btn icon-btn-primary" @click="handleViewItem(row)" title="查看">
+                <n-icon :size="18"><EyeOutline /></n-icon>
+              </div>
+              <div class="icon-btn icon-btn-info" @click="handleEditItem(row)" title="编辑">
+                <n-icon :size="18"><CreateOutline /></n-icon>
+              </div>
+              <div class="icon-btn icon-btn-error" @click="handleDeleteItem(row)" title="删除">
+                <n-icon :size="18"><TrashOutline /></n-icon>
+              </div>
+            </div>
+          </template>
+        </card-list-view>
       </n-card>
     </div>
 
@@ -258,13 +273,14 @@
     <!-- 广义金额和可支配金额表格 -->
     <div class="items-list">
       <n-card size="small">
-        <n-data-table
+        <card-list-view
             size="small"
             :columns="statsColumns"
             :data="dateGroupedStats"
             :pagination="pagination"
             :row-key="row => row.date"
             :loading="loading"
+            :get-cell-text="getCellText"
         />
       </n-card>
     </div>
@@ -347,7 +363,7 @@
         width="auto"
         :min-width="300"
         max-width="95vw"
-        :style="{ maxHeight: '90vh', overflow: 'auto' }"
+        :style="modalStyle"
     >
       <AddEditItemForm
           :categories="categories"
@@ -366,7 +382,7 @@
         width="auto"
         :min-width="300"
         max-width="95vw"
-        :style="{ maxHeight: '90vh', overflow: 'auto' }"
+        :style="modalStyle"
     >
       <AddEditItemForm
           v-if="editingItem"
@@ -387,7 +403,7 @@
         width="auto"
         :min-width="300"
         max-width="95vw"
-        :style="{ maxHeight: '90vh', overflow: 'auto' }"
+        :style="modalStyle"
     >
       <ItemDetail
           v-if="viewingItem"
@@ -409,6 +425,7 @@
         width="auto"
         :min-width="280"
         max-width="90vw"
+        :style="modalStyle"
     >
       <div class="delete-confirm-content">
         <p>确定要删除这条资金条目吗？</p>
@@ -426,7 +443,7 @@
         width="auto"
         :min-width="300"
         max-width="95vw"
-        :style="{ maxHeight: '90vh', overflow: 'auto' }"
+        :style="modalStyle"
     >
       <CategoryManagerModal
           :primary-categories="categories"
@@ -445,7 +462,7 @@
         width="auto"
         :min-width="300"
         max-width="95vw"
-        :style="{ maxHeight: '90vh', overflow: 'auto' }"
+        :style="modalStyle"
     >
       <div class="batch-import-container">
         <div class="import-info">
@@ -514,6 +531,7 @@
 
 <script setup>
 import {ref, onMounted, computed, watch, h} from 'vue'
+import { useRouter } from 'vue-router'
 import {supabase} from '../../supabase.js'
 import {useMessage, NIcon, NButton} from 'naive-ui'
 import {use} from 'echarts/core'
@@ -562,8 +580,38 @@ import {
 import AddEditItemForm from './sub/AddEditItemForm.vue'
 import ItemDetail from './sub/ItemDetail.vue'
 import CategoryManagerModal from './sub/CategoryManagerModal.vue'
+import CardListView from '../CardListView.vue'
 import { commonChartConfig, pieChartCommonConfig } from '../../utils/ChartConfig.js';
 import {labelWidth, valueWidth, percentWidth,pagination} from '../../utils/TableConfig.js'
+import { useMobileModal } from '../../composables/useMobileModal.js'
+
+const router = useRouter()
+const { modalStyle, isMobile } = useMobileModal()
+
+// 卡片布局自定义文本提取
+const getCellText = (row, col) => {
+  switch (col.key) {
+    case 'category': {
+      const sub = subcategories.value.find(s => s.id === row.subcategory_id)
+      if (!sub) return ''
+      const cat = categories.value.find(c => c.id === sub.category_id)
+      return cat?.name || ''
+    }
+    case 'subcategory': {
+      const sub = subcategories.value.find(s => s.id === row.subcategory_id)
+      return sub?.name || ''
+    }
+    case 'amount': return `${row.amount >= 0 ? '+' : ''}${row.amount?.toFixed(2) || 0}元`
+    case 'record_date': return new Date(row.record_date).toLocaleDateString()
+    case 'growth': {
+      const v = parseFloat(row.growth || 0)
+      return `${v >= 0 ? '+' : ''}${Math.abs(v).toFixed(2)}元`
+    }
+    case 'growthRate': return `${parseFloat(row.growthRate || 0) >= 0 ? '+' : ''}${Math.abs(row.growthRate || 0).toFixed(2)}%`
+    case 'yoyGrowthRate': return `${parseFloat(row.yoyGrowthRate || 0) >= 0 ? '+' : ''}${Math.abs(row.yoyGrowthRate || 0).toFixed(2)}%`
+    default: return row[col.key] ?? ''
+  }
+}
 
 // 获取消息实例
 const message = useMessage()
@@ -604,7 +652,7 @@ const importing = ref(false)
 const importResult = ref(null)
 
 // 图表状态
-const chartHeight = ref('350px')
+const chartHeight = computed(() => isMobile.value ? '220px' : '350px')
 const customChartMin = ref(null)
 const customChartMax = ref(null)
 const showCustomLimitsForm = ref(false)
@@ -3482,6 +3530,56 @@ onMounted(() => {
 
   .detail-value {
     font-size: 0.9rem;
+  }
+}
+
+/* 卡片操作按钮 */
+.card-action-btns {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.card-action-btns .icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: #aaa;
+}
+
+.card-action-btns .icon-btn:active {
+  transform: scale(0.92);
+}
+
+.card-action-btns .icon-btn-primary:active {
+  color: #18a058;
+  background-color: rgba(24, 160, 88, 0.1);
+}
+
+.card-action-btns .icon-btn-info:active {
+  color: #2080f0;
+  background-color: rgba(32, 128, 240, 0.1);
+}
+
+.card-action-btns .icon-btn-error:active {
+  color: #f53f3f;
+  background-color: rgba(245, 63, 63, 0.1);
+}
+
+@media (max-width: 768px) {
+  .card-action-btns {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 6px;
   }
 }
 
