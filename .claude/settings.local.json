@@ -10,7 +10,11 @@
       "mcp__supabase__list_extensions",
       "Bash(cat .claude/settings.local.json)",
       "Bash(cat .claude/settings.json)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(node -e \"console.log\\(require\\('vue-router/package.json'\\).version\\)\")",
+      "Bash(pnpm --version)",
+      "Bash(npm install *)",
+      "Bash(pnpm install *)"
     ]
   },
   "enableAllProjectMcpServers": true,
