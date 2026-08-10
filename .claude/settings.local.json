@@ -14,7 +14,10 @@
       "Bash(node -e \"console.log\\(require\\('vue-router/package.json'\\).version\\)\")",
       "Bash(pnpm --version)",
       "Bash(npm install *)",
-      "Bash(pnpm install *)"
+      "Bash(pnpm install *)",
+      "mcp__supabase__execute_sql",
+      "Bash(pnpm build *)",
+      "Bash(git add *)"
     ]
   },
   "enableAllProjectMcpServers": true,

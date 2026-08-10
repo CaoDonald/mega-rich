@@ -50,9 +50,13 @@ const checkAuth = () => {
 }
 
 // 路由守卫：每次路由变化检查登录状态
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   if (authRequiredPages.includes(to.name) && !session.value) {
-    return '/login'
+    const { data: { session: currentSession } } = await supabase.auth.getSession()
+    if (!currentSession) {
+      return '/login'
+    }
+    session.value = currentSession
   }
   return true
 })

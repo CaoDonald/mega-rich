@@ -354,6 +354,47 @@
       </n-card>
     </div>
 
+    <!-- 投资/存款/负债 对比柱状图 -->
+    <div class="items-list">
+      <n-card size="small">
+        <div class="chart-header">
+          <h3>投资 / 存款 / 负债 / 房贷</h3>
+          <n-popover trigger="hover" placement="bottom-end">
+            <template #trigger>
+              <button type="button" class="statistics-help-button" aria-label="查看计算规则">
+                <n-icon>
+                  <HelpCircleOutline/>
+                </n-icon>
+              </button>
+            </template>
+            <div class="statistics-help-content">
+              <div class="statistics-help-title">计算规则</div>
+              <div class="statistics-help-item">
+                <span class="statistics-help-label">投资</span>
+                <span>一级分类为「股市」「基金」「期货」的条目，按金额原值计入。</span>
+              </div>
+              <div class="statistics-help-item">
+                <span class="statistics-help-label">存款</span>
+                <span>扣除投资、负债、房贷后剩余的正数金额，不含公积金。</span>
+              </div>
+              <div class="statistics-help-item">
+                <span class="statistics-help-label">负债</span>
+                <span>金额为负的条目（不含房贷，如信用卡、花呗）。</span>
+              </div>
+              <div class="statistics-help-item">
+                <span class="statistics-help-label">房贷</span>
+                <span>一级分类为「房贷」的条目（贷款，不含公积金）。</span>
+              </div>
+            </div>
+          </n-popover>
+        </div>
+        <v-chart
+            :option="categoryOverviewChartOption"
+            :style="{ height: chartHeight, width: '100%' }"
+        />
+      </n-card>
+    </div>
+
     <!-- 新增资金条目弹窗 -->
     <n-modal
         v-model:show="showAddItemModal"
@@ -542,7 +583,8 @@ import {
   TooltipComponent,
   LegendComponent,
   GridComponent,
-  DataZoomComponent
+  DataZoomComponent,
+  MarkLineComponent
 } from 'echarts/components'
 import VChart from 'vue-echarts'
 import * as XLSX from 'xlsx'
@@ -557,7 +599,8 @@ use([
   TooltipComponent,
   LegendComponent,
   GridComponent,
-  DataZoomComponent
+  DataZoomComponent,
+  MarkLineComponent
 ])
 import {
   AddOutline,
@@ -608,7 +651,9 @@ const getCellText = (row, col) => {
       return `${v >= 0 ? '+' : ''}${Math.abs(v).toFixed(2)}元`
     }
     case 'growthRate': return `${parseFloat(row.growthRate || 0) >= 0 ? '+' : ''}${Math.abs(row.growthRate || 0).toFixed(2)}%`
-    case 'yoyGrowthRate': return `${parseFloat(row.yoyGrowthRate || 0) >= 0 ? '+' : ''}${Math.abs(row.yoyGrowthRate || 0).toFixed(2)}%`
+    case 'yoyGrowthRate':
+      if (!row.hasYoy) return '-'
+      return `${parseFloat(row.yoyGrowthRate || 0) >= 0 ? '+' : ''}${Math.abs(row.yoyGrowthRate || 0).toFixed(2)}%`
     default: return row[col.key] ?? ''
   }
 }
@@ -1287,6 +1332,124 @@ const annualBarChartOption = computed(() => {
   }
 })
 
+// 投资/存款/负债 三大类对比柱状图
+const categoryOverviewChartOption = computed(() => {
+  const stats = timeFilteredMonthlyStats.value
+  const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
+
+  // 投资分类名集合（按一级分类名匹配）
+  const investCategoryNames = new Set(['股市', '基金', '期货'])
+
+  // 计算每个月每个组的金额
+  const rows = stats.map(stat => {
+    const groups = { 投资: 0, 存款: 0, 负债: 0, 房贷: 0 }
+    stat.items.forEach(item => {
+      const sub = subcategories.value.find(s => s.id === item.subcategory_id)
+      if (!sub) return
+      const cat = categories.value.find(c => c.id === sub.category_id)
+      if (!cat) return
+
+      // 1. 投资：按一级分类名匹配
+      if (investCategoryNames.has(cat.name)) {
+        groups.投资 += item.amount
+        return
+      }
+
+      // 2. 排除公积金
+      if (sub.name === '公积金') return
+
+      // 3. 房贷：一级分类为房贷（贷款）
+      if (cat.name === '房贷') {
+        groups.房贷 += item.amount
+        return
+      }
+
+      // 4. 负债（不含房贷）：金额为负
+      if (item.amount < 0) {
+        groups.负债 += item.amount
+        return
+      }
+
+      // 5. 存款：剩下的正数
+      groups.存款 += item.amount
+    })
+    return groups
+  })
+
+  return {
+    title: {
+      ...commonChartConfig.title,
+      text: '投资 / 存款 / 负债 / 房贷'
+    },
+    tooltip: commonChartConfig.tooltip,
+    legend: {
+      ...commonChartConfig.legend,
+      data: ['投资', '存款', '负债', '房贷']
+    },
+    grid: commonChartConfig.grid,
+    xAxis: {
+      type: 'category',
+      boundaryGap: true,
+      data: xAxisData,
+      ...commonChartConfig.xAxis
+    },
+    yAxis: {
+      type: 'value',
+      ...commonChartConfig.yAxis
+    },
+    series: [
+      {
+        name: '投资',
+        type: 'bar',
+        data: rows.map(r => parseFloat(r.投资.toFixed(2))),
+        itemStyle: { color: '#2080f0' },
+        markLine: {
+          silent: true,
+          lineStyle: { color: '#2080f0', type: 'dashed' },
+          label: { formatter: '{c}', position: 'start' },
+          data: [{ type: 'average' }]
+        }
+      },
+      {
+        name: '存款',
+        type: 'bar',
+        data: rows.map(r => parseFloat(r.存款.toFixed(2))),
+        itemStyle: { color: '#18a058' },
+        markLine: {
+          silent: true,
+          lineStyle: { color: '#18a058', type: 'dashed' },
+          label: { formatter: '{c}', position: 'end' },
+          data: [{ type: 'average' }]
+        }
+      },
+      {
+        name: '负债',
+        type: 'bar',
+        data: rows.map(r => parseFloat(r.负债.toFixed(2))),
+        itemStyle: { color: '#f53f3f' },
+        markLine: {
+          silent: true,
+          lineStyle: { color: '#f53f3f', type: 'dashed' },
+          label: { formatter: '{c}', position: 'start' },
+          data: [{ type: 'average' }]
+        }
+      },
+      {
+        name: '房贷',
+        type: 'bar',
+        data: rows.map(r => parseFloat(r.房贷.toFixed(2))),
+        itemStyle: { color: '#f0a020' },
+        markLine: {
+          silent: true,
+          lineStyle: { color: '#f0a020', type: 'dashed' },
+          label: { formatter: '{c}', position: 'end' },
+          data: [{ type: 'average' }]
+        }
+      }
+    ]
+  }
+})
+
 // 当前选中月份的数据
 const currentMonthItems = computed(() => {
   if (selectedDate.value) {
@@ -1783,7 +1946,8 @@ const dateGroupedStats = computed(() => {
       disposableGrowth: parseFloat(disposableGrowth.toFixed(2)),
       disposableGrowthRate: parseFloat(disposableGrowthRate.toFixed(2)),
       disposableYoyGrowth: parseFloat(disposableYoyGrowth.toFixed(2)),
-      disposableYoyGrowthRate: parseFloat(disposableYoyGrowthRate.toFixed(2))
+      disposableYoyGrowthRate: parseFloat(disposableYoyGrowthRate.toFixed(2)),
+      hasYoy: !!sameMonthLastYearStat
     }
   }).sort((a, b) => new Date(b.date) - new Date(a.date)) // 最终按日期倒序排列
 })
@@ -1842,6 +2006,7 @@ const statsColumns = [
     key: 'broadYoyGrowthRate',
     width: percentWidth,
     render(row) {
+      if (!row.hasYoy) return h('span', '-')
       const isPositive = row.broadYoyGrowthRate >= 0
       return h('div', {
         style: {
@@ -1894,6 +2059,7 @@ const statsColumns = [
     key: 'disposableYoyGrowthRate',
     width: percentWidth,
     render(row) {
+      if (!row.hasYoy) return h('span', '-')
       const isPositive = row.disposableYoyGrowthRate >= 0
       return h('div', {
         style: {
@@ -2044,7 +2210,8 @@ const itemsWithGrowthStats = computed(() => {
       growth: parseFloat(growth.toFixed(2)),
       growthRate: parseFloat(growthRate),
       yoyGrowth: parseFloat(yoyGrowth.toFixed(2)),
-      yoyGrowthRate: parseFloat(yoyGrowthRate)
+      yoyGrowthRate: parseFloat(yoyGrowthRate),
+      hasYoy: !!sameMonthLastYearItem
     }
   })
 })
@@ -2139,6 +2306,7 @@ const columns = [
     key: 'yoyGrowthRate',
     width:  percentWidth,
     render(row) {
+      if (!row.hasYoy) return h('span', '-')
       const value = parseFloat(row.yoyGrowthRate || 0)
       const isNegative = value < 0
       const displayValue = Math.abs(value).toFixed(2)
@@ -3255,6 +3423,22 @@ onMounted(() => {
   gap: 8px;
   margin-bottom: 16px;
   min-height: 32px;
+}
+
+.chart-header {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+  min-height: 32px;
+}
+
+.chart-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
 }
 
 .statistics-header h3 {
