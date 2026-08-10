@@ -372,18 +372,26 @@
               <div class="statistics-help-item">
                 <span class="statistics-help-label">投资</span>
                 <span>一级分类为「股市」「基金」「期货」的条目，按金额原值计入。</span>
+                <span class="statistics-help-stat">平均值 {{ categoryOverviewStats.投资.avg }} 元，较上月 {{ categoryOverviewStats.投资.change >= 0 ? '+' : '' }}{{ categoryOverviewStats.投资.change }} 元</span>
               </div>
               <div class="statistics-help-item">
                 <span class="statistics-help-label">存款</span>
                 <span>扣除投资、负债、房贷后剩余的正数金额，不含公积金。</span>
+                <span class="statistics-help-stat">平均值 {{ categoryOverviewStats.存款.avg }} 元，较上月 {{ categoryOverviewStats.存款.change >= 0 ? '+' : '' }}{{ categoryOverviewStats.存款.change }} 元</span>
               </div>
               <div class="statistics-help-item">
                 <span class="statistics-help-label">负债</span>
                 <span>金额为负的条目（不含房贷，如信用卡、花呗）。</span>
+                <span class="statistics-help-stat">平均值 {{ categoryOverviewStats.负债.avg }} 元，较上月 {{ categoryOverviewStats.负债.change >= 0 ? '+' : '' }}{{ categoryOverviewStats.负债.change }} 元</span>
               </div>
               <div class="statistics-help-item">
                 <span class="statistics-help-label">房贷</span>
                 <span>一级分类为「房贷」的条目（贷款，不含公积金）。</span>
+                <span class="statistics-help-stat">平均值 {{ categoryOverviewStats.房贷.avg }} 元，较上月 {{ categoryOverviewStats.房贷.change >= 0 ? '+' : '' }}{{ categoryOverviewStats.房贷.change }} 元</span>
+              </div>
+              <div class="statistics-help-item">
+                <span class="statistics-help-label">叠加规则</span>
+                <span>投资与存款叠加为一列，负债与房贷取绝对值后叠加为另一列。</span>
               </div>
             </div>
           </n-popover>
@@ -1332,16 +1340,15 @@ const annualBarChartOption = computed(() => {
   }
 })
 
-// 投资/存款/负债 三大类对比柱状图
-const categoryOverviewChartOption = computed(() => {
+// 投资/存款/负债/房贷 各组月度数据
+const categoryOverviewRows = computed(() => {
   const stats = timeFilteredMonthlyStats.value
-  const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
 
   // 投资分类名集合（按一级分类名匹配）
   const investCategoryNames = new Set(['股市', '基金', '期货'])
 
   // 计算每个月每个组的金额
-  const rows = stats.map(stat => {
+  return stats.map(stat => {
     const groups = { 投资: 0, 存款: 0, 负债: 0, 房贷: 0 }
     stat.items.forEach(item => {
       const sub = subcategories.value.find(s => s.id === item.subcategory_id)
@@ -1375,6 +1382,43 @@ const categoryOverviewChartOption = computed(() => {
     })
     return groups
   })
+})
+
+// 投资/存款/负债/房贷 各项的平均值与最新月变化绝对值
+const categoryOverviewStats = computed(() => {
+  const rows = categoryOverviewRows.value
+  const keys = ['投资', '存款', '负债', '房贷']
+  const result = {}
+
+  keys.forEach(key => {
+    const values = rows.map(r => r[key])
+    const validValues = values.filter(v => v !== 0)
+
+    // 平均值
+    const sum = values.reduce((acc, v) => acc + v, 0)
+    const avg = validValues.length > 0
+      ? parseFloat((sum / validValues.length).toFixed(2))
+      : 0
+
+    // 变化绝对值：最新月减去上月
+    let change = 0
+    if (values.length >= 2) {
+      const latest = values[values.length - 1]
+      const prev = values[values.length - 2]
+      change = parseFloat((latest - prev).toFixed(2))
+    }
+
+    result[key] = { avg, change }
+  })
+
+  return result
+})
+
+// 投资/存款/负债/房贷 三大类对比柱状图（投资+存款叠加，负债+房贷叠加取绝对值）
+const categoryOverviewChartOption = computed(() => {
+  const stats = timeFilteredMonthlyStats.value
+  const xAxisData = stats.map(stat => `${stat.year}-${(stat.month + 1).toString().padStart(2, '0')}`)
+  const rows = categoryOverviewRows.value
 
   return {
     title: {
@@ -1401,50 +1445,30 @@ const categoryOverviewChartOption = computed(() => {
       {
         name: '投资',
         type: 'bar',
+        stack: 'asset',
         data: rows.map(r => parseFloat(r.投资.toFixed(2))),
-        itemStyle: { color: '#2080f0' },
-        markLine: {
-          silent: true,
-          lineStyle: { color: '#2080f0', type: 'dashed' },
-          label: { formatter: '{c}', position: 'start' },
-          data: [{ type: 'average' }]
-        }
+        itemStyle: { color: '#f53f3f' }
       },
       {
         name: '存款',
         type: 'bar',
+        stack: 'asset',
         data: rows.map(r => parseFloat(r.存款.toFixed(2))),
-        itemStyle: { color: '#18a058' },
-        markLine: {
-          silent: true,
-          lineStyle: { color: '#18a058', type: 'dashed' },
-          label: { formatter: '{c}', position: 'end' },
-          data: [{ type: 'average' }]
-        }
+        itemStyle: { color: '#ff7d00' }
       },
       {
         name: '负债',
         type: 'bar',
-        data: rows.map(r => parseFloat(r.负债.toFixed(2))),
-        itemStyle: { color: '#f53f3f' },
-        markLine: {
-          silent: true,
-          lineStyle: { color: '#f53f3f', type: 'dashed' },
-          label: { formatter: '{c}', position: 'start' },
-          data: [{ type: 'average' }]
-        }
+        stack: 'liability',
+        data: rows.map(r => parseFloat(Math.abs(r.负债).toFixed(2))),
+        itemStyle: { color: '#18a058' }
       },
       {
         name: '房贷',
         type: 'bar',
-        data: rows.map(r => parseFloat(r.房贷.toFixed(2))),
-        itemStyle: { color: '#f0a020' },
-        markLine: {
-          silent: true,
-          lineStyle: { color: '#f0a020', type: 'dashed' },
-          label: { formatter: '{c}', position: 'end' },
-          data: [{ type: 'average' }]
-        }
+        stack: 'liability',
+        data: rows.map(r => parseFloat(Math.abs(r.房贷).toFixed(2))),
+        itemStyle: { color: '#36cfc9' }
       }
     ]
   }
@@ -3506,6 +3530,12 @@ onMounted(() => {
   font-size: 0.86rem;
   font-weight: 700;
   color: var(--custom-color-secondary);
+}
+
+.statistics-help-stat {
+  font-size: 0.82rem;
+  color: var(--custom-color-secondary);
+  opacity: 0.85;
 }
 
 .amounts-table-section {

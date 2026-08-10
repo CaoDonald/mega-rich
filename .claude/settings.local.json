@@ -17,7 +17,8 @@
       "Bash(pnpm install *)",
       "mcp__supabase__execute_sql",
       "Bash(pnpm build *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   },
   "enableAllProjectMcpServers": true,
