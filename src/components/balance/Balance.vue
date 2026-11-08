@@ -2469,7 +2469,9 @@ const handleBatchImport = async (file) => {
     const validRecords = await validateRecordsWithCategories(records, primaryCategoriesMap, secondaryCategoriesMap)
 
     // 3. 批量插入记录
+    console.log('[导入] 开始写入记录:', validRecords.length)
     await batchInsertRecords(validRecords)
+    console.log('[导入] 写入完成，刷新数据')
     await loadData()
 
     importResult.value = {
@@ -2577,6 +2579,7 @@ const parseExcel = async (file) => {
 
 // 提取并创建分类的函数
 const extractAndCreateCategories = async (records) => {
+  console.log('[导入] 开始处理分类')
   // 使用Map存储分类，避免重复创建
   const primaryCategoriesSet = new Set()
   const secondaryCategoriesMap = new Map() // key: 一级分类名称|二级分类名称, value: 二级分类名称
@@ -2629,10 +2632,12 @@ const extractAndCreateCategories = async (records) => {
 
   // 3. 重新查询所有一级分类
   message.info('重新加载一级分类数据...')
+  console.log('[导入] 查询一级分类...')
   const {data: categoriesData} = await supabase
       .from('balance_categories')
       .select('*')
       .order('created_at', {ascending: true})
+  console.log('[导入] 一级分类查询完成:', categoriesData?.length)
   categories.value = categoriesData || []
 
   // 4. 创建不存在的二级分类
@@ -2663,10 +2668,12 @@ const extractAndCreateCategories = async (records) => {
 
   // 5. 重新查询所有二级分类
   message.info('重新加载二级分类数据...')
+  console.log('[导入] 查询二级分类...')
   const {data: subcategoriesData} = await supabase
       .from('balance_subcategories')
       .select('*')
       .order('created_at', {ascending: true})
+  console.log('[导入] 二级分类查询完成:', subcategoriesData?.length)
   subcategories.value = subcategoriesData || []
 
   // 6. 构建分类映射
