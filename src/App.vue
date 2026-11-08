@@ -70,16 +70,23 @@ provide('loadUser', loadUser)
 onMounted(async () => {
   await loadUser()
 
-  supabase.auth.onAuthStateChange(async (event, newSession) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      await loadUser()
-      router.push('/password-reset')
-    } else if (event === 'SIGNED_IN') {
-      await loadUser()
-    } else if (event === 'SIGNED_OUT') {
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') {
       session.value = null
       user.value = null
       checkAuth()
+      return
+    }
+
+    if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
+      // 该回调是在 Supabase 的 auth 锁内部执行的，回调里直接调用 supabase
+      // （getSession / 查表）会再次申请同一把 lock:sb-*-auth-token，
+      // 造成自锁：锁永不释放，后续所有请求排队，表现为导入一直卡"解析中"。
+      // 用 setTimeout 跳出锁作用域后再执行。
+      setTimeout(async () => {
+        await loadUser()
+        if (event === 'PASSWORD_RECOVERY') router.push('/password-reset')
+      }, 0)
     }
   })
 })
