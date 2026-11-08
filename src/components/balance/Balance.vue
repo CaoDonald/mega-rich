@@ -2422,15 +2422,31 @@ const triggerFileInput = () => fileInputRef.value?.click()
 const handleFileChange = async (e) => {
   const file = e.target.files[0]
   if (!file) return
-  e.target.value = ''
-  await handleBatchImport(file)
+  console.log('[导入] 已选择文件:', file.name, file.size, 'bytes')
+  try {
+    await handleBatchImport(file)
+  } finally {
+    // 读取完成后再清空，避免部分浏览器在解析前清空 value 导致 File 读取不回调
+    e.target.value = ''
+  }
 }
 
 const handleBatchImport = async (file) => {
+  let watchdog
   try {
     importing.value = true
     importResult.value = null
     message.loading('解析文件中...', {duration: 2000})
+
+    // 兜底：任何一步长期无响应都结束"解析中"状态，避免界面永久卡住
+    watchdog = setTimeout(() => {
+      if (importing.value) {
+        importing.value = false
+        importResult.value = {success: false, message: '导入超时，请刷新页面后重试'}
+        message.error('导入超时，请刷新页面后重试')
+        console.error('[导入] 流程超时，最后一步未返回')
+      }
+    }, 60000)
 
     let records
     const ext = file.name.split('.').pop().toLowerCase()
@@ -2443,6 +2459,7 @@ const handleBatchImport = async (file) => {
       throw new Error('仅支持csv/xlsx/xls格式')
     }
 
+    console.log('[导入] 解析完成，记录数:', records?.length)
     if (!records || records.length === 0) throw new Error('文件无数据')
 
     // 1. 提取所有分类，统一创建不存在的分类
@@ -2472,6 +2489,7 @@ const handleBatchImport = async (file) => {
     }
     message.error('导入失败: ' + error.message)
   } finally {
+    clearTimeout(watchdog)
     importing.value = false
   }
 }
@@ -2539,24 +2557,22 @@ const createSecondaryCategory = async (name, categoryId) => {
   }
 }
 
-const parseExcel = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result)
-        const workbook = XLSX.read(data, {type: 'array'})
-        const sheetName = workbook.SheetNames[0]
-        const worksheet = workbook.Sheets[sheetName]
-        const json = XLSX.utils.sheet_to_json(worksheet)
-        resolve(json)
-      } catch (error) {
-        reject(new Error('Excel解析失败: ' + error.message))
-      }
-    }
-    reader.onerror = () => reject(new Error('Excel读取失败'))
-    reader.readAsArrayBuffer(file)
-  })
+const parseExcel = async (file) => {
+  console.log('[导入] 开始读取 Excel:', file.name, file.size, 'bytes')
+  // 用 file.arrayBuffer() 替代 FileReader，避免部分浏览器下 onload 不触发导致永久等待
+  const buffer = await file.arrayBuffer()
+  console.log('[导入] 读取完成，字节数:', buffer.byteLength)
+  try {
+    const workbook = XLSX.read(new Uint8Array(buffer), {type: 'array'})
+    const sheetName = workbook.SheetNames[0]
+    const worksheet = workbook.Sheets[sheetName]
+    const json = XLSX.utils.sheet_to_json(worksheet)
+    console.log('[导入] Excel 解析完成，行数:', json.length, '表头:', Object.keys(json[0] || {}))
+    return json
+  } catch (error) {
+    console.error('[导入] Excel 解析异常:', error)
+    throw new Error('Excel解析失败: ' + error.message)
+  }
 }
 
 // 提取并创建分类的函数
